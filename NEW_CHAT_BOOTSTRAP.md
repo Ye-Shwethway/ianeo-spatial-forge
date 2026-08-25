@@ -12,87 +12,96 @@ Target direction:
 
 **Creator → ChatGPT / IANEO → proven Spatial Forge backend → 3D assets / previews → web viewer → Telegram/Mini App**
 
-MCP is intentionally deferred until the backend and delivery path are independently established.
+MCP remains intentionally deferred until backend and delivery paths are independently proven.
 
-## Current Architecture Decisions
+## Current Architecture
 
 - Public repo contains engine code, workflows, schemas, skills, viewer code, and generic fixtures only.
 - Private character canon and private generated assets must never be committed.
 - Proven 3D baseline: Blender `4.5.12 LTS` + MPFB `2.0.17`.
 - `skills/spatial-forge-3d/SKILL.md` is the 3D creation/validation router.
-- `skills/spatial-forge-ui/SKILL.md` is the UI/UX router for web, Telegram Mini App, and future Flutter work.
-- The viewer is framework-free/static, URL-driven, and uses pinned `@google/model-viewer` `4.3.1`.
-- Cloudflare native Git integration was abandoned after repeated failures. Do not retry it unless explicitly requested.
-- Canonical viewer deployment is **GitHub Actions → Wrangler → Cloudflare Pages Direct Upload**.
-- Cloudflare Pages project: `ianeo-spatial-forge`.
-- Live URLs: `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/`.
-- VPS provides protected/private build assets and control APIs, not Blender rendering and not viewer rendering.
+- `skills/spatial-forge-ui/SKILL.md` is the UI/UX router.
+- Viewer is framework-free/static, URL-driven, and uses pinned `@google/model-viewer` `4.3.1`.
+- Cloudflare native Git integration is abandoned. Canonical viewer deployment is GitHub Actions → Wrangler → Cloudflare Pages Direct Upload.
+- Pages project: `ianeo-spatial-forge`.
+- Viewer URLs: `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/`.
+- VPS stores protected/private build assets and serves control/temporary-asset APIs. It does not render Blender jobs or host the public viewer shell.
 - Canonical/private GLBs, previews, manifests, references, and metadata must never be deployed as plain public Pages files.
-- Telegram later opens the same viewer; Flutter remains optional later; MCP remains late-stage only.
-- VPS bootstrap/manual access is one-time only. Termux or Bamboo may establish the connection, directories, service user, and secrets or perform emergency repair. After the deployment connection exists, normal VPS updates must come from GitHub Actions.
+- Telegram later opens the same viewer. Flutter remains optional. MCP remains late-stage.
 
 ## Proven Runtime State
 
 ### P0 — PASS
-Run `32859113238`, Blender `4.5.12 LTS`.
+Run `32859113238`; Blender `4.5.12 LTS`.
 
 ### P1 — PASS
-Run `32860562804`, Blender `4.5.12 LTS`, MPFB `2.0.17`; GLB contained 1 mesh definition, 1 skin, 53 joints.
+Run `32860562804`; Blender `4.5.12 LTS`; MPFB `2.0.17`; GLB 1 mesh definition, 1 skin, 53 joints.
 
-### P2.1–P2.4 — PASS
-Runs `32864360900` and `32864975879`; six proven MPFB controls are truthful and exact unsupported real-world measurement intent is reported rather than fabricated.
-
-### P2.5 / P2.6 — PASS
-Character Revision Proof run `32877860898`, commit `137dafa67823894a1dfc95d3aa96370996d3739b`.
-
-The workflow built generic-character v1 and v2. Only `muscle` changed from `0.72` to `0.52`; declared locks for gender, age, weight, height, and proportions remained exact. v2 fresh import succeeded with 2 mesh objects, 1 armature, and 53 joints. The uploaded revision artifact was downloaded and both front/three-quarter preview pairs were visually inspected with no obvious corruption. The appearance delta is subtle under the neutral material, so no stronger visual claim is made.
+### P2 — PASS
+Runs `32864360900`, `32864975879`, `32877860898`. Six MPFB controls are proven; unsupported precision is reported rather than fabricated; scoped revision/locks passed.
 
 ### P2V — PASS
-Viewer hosting, Direct Upload deployment, real GLB/preview/metadata delivery, and Android touch/visual inspection are proven. The `/demo/` assets are generic public-safe only.
+Viewer smoke, Pages Direct Upload, generic real GLB delivery, and Android touch/visual inspection passed. `/demo/` is generic public-safe only.
 
-## P3 Private Asset Contract — PASS
+### P3.1 — PASS
+Private control-plane contract and stdlib Python service implemented.
 
-`docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines the initial private delivery boundary:
-- public Cloudflare Pages viewer shell
-- private VPS build storage outside any public web root
-- unauthenticated `GET /health`
-- bearer-authenticated private build status
-- bearer-authenticated creation of temporary viewer sessions
-- temporary read-only `/s/{session_id}/{asset}` delivery limited to model GLB, build-result JSON, front PNG, and three-quarter PNG
-- high-entropy server-side session IDs
-- default 2-hour TTL, 24-hour hard maximum
-- `Cache-Control: private, no-store`, `Referrer-Policy: no-referrer`, and `X-Content-Type-Options: nosniff`
-- viewer-asset CORS limited to `https://forge.drthorne.uk`
-- no database/account system/JWT platform required
-- long-lived control token never appears in viewer URLs
+### P3.2 — PASS
+VPS bootstrap is complete:
+- runtime user `spatialforge`
+- deploy user `eidolon-deploy`
+- root `/srv/ianeo-spatial-forge`
+- service bind `127.0.0.1:18792`
+- private/state directories separated from deploy-owned app code
+- local non-printed `SF_CONTROL_TOKEN`
+- narrow restart/status/is-active sudo rules only
+- service active and enabled at boot
+- public IPv4 connection to `18792` refused
+- `/health` returns 200
+- no tunnel/DNS/firewall/package changes were required for bootstrap.
 
-## Current Slice
+### P3.3 — PASS
+Temporary server-side sessions now have cleanup at service startup and request boundaries. Expired/corrupt session records are removed and expired capability URLs return 404.
 
-### P3.2 — VPS Bootstrap
+Smoke runs `32885401030` and `32885482676` proved cleanup, bearer auth, session creation, protected asset GET, real security/CORS headers, absolute `SF_ASSET_ORIGIN` URL generation, and expired capability deletion.
 
-Before modifying the VPS, perform one read-only environment survey so the bootstrap does not collide with existing services.
+### P3.5 / P3.6 — PASS
+GitHub Actions is the normal VPS deployment path. Bamboo/Termux are bootstrap/emergency-only.
 
-Need to establish only:
-- OS/version/architecture
-- whether systemd is available
-- Python 3 and Node versions if installed
-- existing reverse proxy/web server (nginx, Caddy, Apache, other)
-- whether cloudflared is installed/running
-- listening ports relevant to HTTP/HTTPS and the proposed local app port
-- current SSH service/port and whether a dedicated deploy/service-user path is practical
-- existing `/srv` conventions/directories that must not be disturbed
+Initial deploy proof: run `32884206891`.
 
-Do not print passwords, private keys, API tokens, tunnel credentials, environment secrets, or unrelated application configuration.
+Normal smoke-gated chain is now:
 
-After the survey, IANEO will prepare one minimal bootstrap action. Manual/Termux/Bamboo use ends once GitHub Actions can deploy and verify the VPS service.
+**control-plane change → Control Plane Smoke PASS → Deploy Control Plane to VPS → pinned SSH → code deploy → service restart → localhost health**
 
-## VPS Manual/Automation Boundary
+Fresh chain proof:
+- Control Plane Smoke `32885482676` PASS
+- automatic VPS deploy `32885510216` PASS.
 
-1. Manual/Bamboo/Termux is bootstrap or emergency-only.
-2. Never ask the Creator to paste secret values into chat.
-3. If secret setup is required, provide a one-shot command or exact GitHub UI secret step.
-4. Once GitHub Actions can reach the VPS, use Actions for routine deployment/update/verification.
-5. Bamboo must not become a permanent runtime dependency.
+## Current Slice — P3.4 Protected HTTPS Asset Origin
+
+P3.4 is the only remaining P3 item.
+
+Current service is intentionally localhost-only; there is no public ingress to port `18792`.
+
+Next goal:
+1. Inspect the existing `cloudflared` setup without modifying unrelated ingress.
+2. Choose one dedicated HTTPS asset hostname for Spatial Forge.
+3. Route only that hostname to `http://127.0.0.1:18792` through Cloudflare Tunnel; never expose port `18792` directly.
+4. Set `SF_ASSET_ORIGIN` to that HTTPS hostname.
+5. Stage/provide a private-safe test build through an approved path.
+6. Create a temporary viewer session and prove `https://forge.drthorne.uk` can fetch GLB/JSON/PNG through the temporary capability URL with correct CORS, no-store headers, and expiry behavior.
+7. Keep control-token APIs out of browser CORS.
+
+Do not mark P3.4 complete until this end-to-end live proof exists.
+
+## VPS Operating Boundary
+
+1. GitHub Actions is the normal deployment/update/verification path.
+2. Bamboo/Termux/root access is bootstrap or emergency-only.
+3. Never ask the Creator to paste secret values into chat.
+4. Do not expose `127.0.0.1:18792` directly to the Internet.
+5. Do not modify unrelated `/srv/eidolon`, tunnels, services, firewall rules, or container ports.
 
 ## Working Rules
 
