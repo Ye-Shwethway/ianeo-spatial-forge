@@ -99,3 +99,5 @@ jobs:
           test ! -e "$ROOT/private/sessions/${EXPIRED_ID}.json"
 
           echo "Control plane smoke PASS"
+
+# This workflow gates the production VPS deploy via workflow_run.
