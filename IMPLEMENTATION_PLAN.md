@@ -89,6 +89,24 @@ Control Plane Smoke runs `32885401030` and `32885482676` passed:
 - actual GET response headers (`Access-Control-Allow-Origin`, `Cache-Control`, `Referrer-Policy`, `X-Content-Type-Options`)
 - expired capability 404 + session-file removal.
 
+Credentialed cross-origin support is also proven in CI: viewer asset requests send credentials, and the control plane returns exact-origin CORS plus `Access-Control-Allow-Credentials: true`. Control Plane Smoke `32887785458`, Viewer Smoke `32887798560`, and smoke-gated VPS deploy `32887801307` passed.
+
+### Web Access security runtime proof
+
+The Spatial Forge viewer is protected by Cloudflare Access using Email One-Time PIN only, exact-owner-email Allow policy, deny-by-default behavior, and a 30-day session. Protected hostnames include `forge.drthorne.uk`, `ianeo-spatial-forge.pages.dev`, and `*.ianeo-spatial-forge.pages.dev` so the Pages fallback/preview paths are not intended as anonymous bypasses.
+
+Android runtime screenshots verified the real flow:
+- unauthenticated `forge.drthorne.uk` reaches the Cloudflare Access login page
+- OTP verification reaches the Spatial Forge viewer
+- the viewer `Log out` action reaches `/cdn-cgi/access/logout`
+- Cloudflare reports successful logout and immediately requires login again.
+
+### P3.4 ingress state
+
+Cloudflare Tunnel published hostname `assets.drthorne.uk` is now configured on the existing remotely-managed tunnel `fbforbambooclaw`, targeting only `http://127.0.0.1:18792`. `assets.drthorne.uk` is also attached to the existing `IANEO Spatial Forge` Access application with Eager redirect cookie enabled. An unauthenticated `/health` request is Access-gated. No direct VPS port `18792` exposure, firewall opening, or direct-IP route was created.
+
+The repo service template now declares `SF_ASSET_ORIGIN=https://assets.drthorne.uk`. P3.4 remains open until the live VPS runtime receives that environment value and a temporary private test build is retrieved end-to-end through the authenticated phone viewer with GLB/JSON/PNG and expiry behavior proven.
+
 ### P3.5 / P3.6 runtime proof
 
 Initial VPS deploy run `32884206891` passed SSH key validation, pinned host-key SSH, code deployment, service restart, and localhost health verification.
@@ -105,7 +123,7 @@ Bamboo/Termux are now bootstrap/emergency-only, not normal deployment dependenci
 
 ### Current P3 target
 
-P3.4 remains open because the service intentionally has no public ingress yet. Next establish one protected HTTPS asset origin (without exposing port `18792` directly), set `SF_ASSET_ORIGIN`, then prove the live `forge.drthorne.uk` viewer can retrieve a temporary protected asset with correct CORS/expiry behavior.
+Finish P3.4 with one-time live service environment wiring for `SF_ASSET_ORIGIN=https://assets.drthorne.uk`, then create a private generic test build and prove the authenticated `forge.drthorne.uk` viewer can retrieve temporary protected GLB/JSON/PNG through `assets.drthorne.uk` with correct CORS, credential, and expiry behavior.
 
 ## P4 — Telegram Delivery + Mini App
 
