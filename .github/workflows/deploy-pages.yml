@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "viewer/**"
+      - "functions/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -28,7 +29,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Deploy viewer to Cloudflare Pages
+      - name: Deploy viewer and Pages Functions to Cloudflare Pages
         run: npx wrangler@latest pages deploy viewer --project-name=ianeo-spatial-forge --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
