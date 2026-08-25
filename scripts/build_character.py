@@ -11,6 +11,7 @@ from mathutils import Vector
 
 
 CONTROL_NAMES = ("gender", "age", "muscle", "weight", "height", "proportions")
+LOCKABLE_FIELDS = tuple(f"phenotype.{name}" for name in CONTROL_NAMES)
 MEASUREMENT_UNITS = {"cm", "in", "kg", "lb", "percent"}
 UNSUPPORTED_MEASUREMENT_REASON = (
     "MPFB 2.0.17 has no proven direct control that guarantees this exact real-world "
@@ -19,7 +20,6 @@ UNSUPPORTED_MEASUREMENT_REASON = (
 
 
 def find_mpfb_module():
-    """Return the loaded MPFB extension root module without assuming repository namespace."""
     for module_name in list(sys.modules):
         if module_name.endswith(".mpfb"):
             return importlib.import_module(module_name)
@@ -47,7 +47,7 @@ def load_manifest(path: Path):
     data = json.loads(path.read_text(encoding="utf-8"))
 
     required_root = {"schema_version", "character_id", "version", "generator", "phenotype"}
-    allowed_root = required_root | {"requested_measurements"}
+    allowed_root = required_root | {"requested_measurements", "revision"}
     extra = sorted(set(data) - allowed_root)
     missing = sorted(required_root - set(data))
     if extra or missing:
@@ -72,6 +72,20 @@ def load_manifest(path: Path):
             raise ValueError(f"phenotype.{name} must be within 0.0..1.0")
         phenotype[name] = float(value)
 
+    revision = data.get("revision")
+    if revision is not None:
+        if not isinstance(revision, dict) or set(revision) != {"parent_version", "locked_fields"}:
+            raise ValueError("revision must contain exactly parent_version and locked_fields")
+        parent_version = revision["parent_version"]
+        if not isinstance(parent_version, int) or isinstance(parent_version, bool) or parent_version < 1:
+            raise ValueError("revision.parent_version must be an integer >= 1")
+        locked_fields = revision["locked_fields"]
+        if not isinstance(locked_fields, list) or len(locked_fields) != len(set(locked_fields)):
+            raise ValueError("revision.locked_fields must be a unique array")
+        unknown = sorted(set(locked_fields) - set(LOCKABLE_FIELDS))
+        if unknown:
+            raise ValueError(f"revision.locked_fields contains unsupported fields: {unknown}")
+
     requested_measurements = data.get("requested_measurements", [])
     if not isinstance(requested_measurements, list):
         raise ValueError("requested_measurements must be an array")
@@ -91,6 +105,37 @@ def load_manifest(path: Path):
             raise ValueError(f"requested_measurements[{index}].unit is unsupported")
 
     return data
+
+
+def enforce_revision(manifest, parent_path):
+    revision = manifest.get("revision")
+    if revision is None:
+        if parent_path:
+            raise ValueError("SF_PARENT_MANIFEST was supplied but manifest has no revision block")
+        return None
+    if not parent_path:
+        raise ValueError("revision manifest requires SF_PARENT_MANIFEST")
+
+    parent = load_manifest(Path(parent_path).resolve())
+    if parent["character_id"] != manifest["character_id"]:
+        raise ValueError("revision parent character_id does not match")
+    if parent["version"] != revision["parent_version"]:
+        raise ValueError("revision parent_version does not match parent manifest version")
+    if manifest["version"] <= parent["version"]:
+        raise ValueError("revision version must be greater than parent version")
+
+    for field in revision["locked_fields"]:
+        _, name = field.split(".", 1)
+        if manifest["phenotype"][name] != parent["phenotype"][name]:
+            raise ValueError(
+                f"locked field drift: {field} parent={parent['phenotype'][name]} "
+                f"revision={manifest['phenotype'][name]}"
+            )
+
+    return {
+        "parent_version": parent["version"],
+        "locked_fields": list(revision["locked_fields"]),
+    }
 
 
 def unsupported_measurements(manifest):
@@ -177,9 +222,11 @@ def main():
     manifest_path = Path(os.environ.get("SF_MANIFEST", "fixtures/generic-character-v1.json")).resolve()
     output_dir = Path(os.environ.get("SF_OUTPUT_DIR", "output/character-manifest")).resolve()
     expected_mpfb = os.environ.get("SF_EXPECTED_MPFB_VERSION", "2.0.17")
+    parent_manifest_path = os.environ.get("SF_PARENT_MANIFEST")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = load_manifest(manifest_path)
+    revision = enforce_revision(manifest, parent_manifest_path)
     unsupported = unsupported_measurements(manifest)
     mpfb = find_mpfb_module()
     actual_mpfb = version_string(mpfb.VERSION)
@@ -276,10 +323,7 @@ def main():
         "character_id": manifest["character_id"],
         "version": manifest["version"],
         "status": "success",
-        "runtime": {
-            "blender": bpy.app.version_string,
-            "mpfb": actual_mpfb,
-        },
+        "runtime": {"blender": bpy.app.version_string, "mpfb": actual_mpfb},
         "applied_controls": dict(manifest["phenotype"]),
         "unsupported_fields": unsupported,
         "outputs": [
@@ -291,6 +335,8 @@ def main():
         "structural": structural,
         "visual_evidence": [front_path.name, three_quarter_path.name],
     }
+    if revision is not None:
+        result["revision"] = revision
     result_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
     print("IANEO Spatial Forge manifest build PASS")
@@ -298,6 +344,7 @@ def main():
     print("Blender:", bpy.app.version_string)
     print("MPFB:", actual_mpfb)
     print("Applied controls:", result["applied_controls"])
+    print("Revision:", revision)
     print("Unsupported measurements:", unsupported)
     print("Structural:", structural)
     print("Output:", output_dir)
