@@ -86,7 +86,7 @@ async function loadMetadata() {
   setStatus(modelUrl ? 'Loading details' : 'Loading metadata');
 
   try {
-    const response = await fetch(metaUrl, { credentials: 'omit' });
+    const response = await fetch(metaUrl, { credentials: 'include' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
