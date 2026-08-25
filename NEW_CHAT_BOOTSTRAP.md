@@ -24,7 +24,7 @@ MCP is intentionally deferred until the backend and delivery path are independen
 - Phone inspection is deliberately pulled forward as P2V before P2.5/P2.6.
 - The viewer is framework-free/static, URL-driven, and uses pinned `@google/model-viewer` `4.3.1`.
 - Cloudflare native Git integration was abandoned after repeated failures. Do not retry it unless explicitly requested.
-- Canonical viewer deployment is now **GitHub Actions → Wrangler → Cloudflare Pages Direct Upload**.
+- Canonical viewer deployment is **GitHub Actions → Wrangler → Cloudflare Pages Direct Upload**.
 - Cloudflare Pages project: `ianeo-spatial-forge`.
 - Live URLs: `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/`.
 - VPS later provides protected/private build assets and control APIs, not viewer rendering.
@@ -54,41 +54,57 @@ Viewer Smoke run `32866763601` passed serving/fetch verification for the static 
 ### P2V.6 — PASS
 Workflow: `.github/workflows/deploy-pages.yml`
 
-Deployment behavior:
-- push to `main` for `viewer/**` or workflow changes
-- `workflow_dispatch`
-- Node 22
-- `contents: read`
-- production concurrency
-- `npx wrangler@latest pages deploy viewer --project-name=ianeo-spatial-forge --branch=main`
-- credentials only from GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
-
 First successful deployment:
 - commit `4901727e1b72a29ba5ec2692afdbf3da8cf85d39`
 - run `32876020417`
 
-Live-URL verification upgrade:
+Live-URL verification:
 - commit `411036bcf9e57cd5faec4ee69fa32725ec2e7bce`
 - run `32876094428`
-- deploy step PASS
-- HTTPS/content verification PASS for both `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/`
+- deploy PASS
+- HTTPS/content PASS for both Pages and custom-domain URLs
 
 No Worker, D1, KV, R2, Tunnel, database, or unrelated Cloudflare resource was added.
 
+### Real Generic Viewer Demo — LIVE, ANDROID CONFIRMATION PENDING
+
+Workflow: `.github/workflows/deploy-viewer-demo.yml`
+
+The workflow intentionally reuses the already-proven P2.4 artifact instead of re-running Blender. It stages these generic public-safe assets under `viewer/demo/` at runtime and Direct Upload deploys them without committing the binaries:
+- `generic-unsupported-v1.glb`
+- `front.png`
+- `three-quarter.png`
+- `build-result.json`
+
+Successful proof:
+- commit `f3ebe566d26fa1bdaff2ba6287261a4f0d2778e0`
+- run `32876486511`
+- artifact download PASS
+- staged metadata assertions PASS
+- Wrangler Pages deployment PASS
+- live `build-result.json` PASS
+- live GLB download PASS and >8 MB
+- live preview PNG PASS
+- live viewer URL PASS
+
+First real demo URL:
+`https://forge.drthorne.uk/?model=/demo/generic-unsupported-v1.glb&meta=/demo/build-result.json&front=/demo/front.png&threeQuarter=/demo/three-quarter.png&title=Generic%20Character%20P2.4`
+
 ## Current Slice
 
-### P2V.2 / P2V.3 / P2V.4 / P2V.7 — Real Viewer Proof
+### P2V.2 / P2V.3 / P2V.4 / P2V.7 — Android Viewer Confirmation
 
-The viewer hosting foundation is live. Next, provide one generic public-safe Spatial Forge build through browser-accessible URLs and verify:
-1. real GLB renders in the deployed viewer
-2. rotate/zoom/reset works on the Creator's Android phone
-3. front and three-quarter previews render
-4. `build-result.json` metadata renders truthfully, including unsupported fields
-5. no private canon/assets are exposed
+The real generic assets are live and browser-accessible. The Creator should open the demo URL on Android and confirm:
+1. the real GLB visibly renders
+2. drag rotates the model
+3. pinch zoom works
+4. Reset view works
+5. front and three-quarter previews are visible
+6. build metadata renders, including Blender `4.5.12 LTS`, MPFB `2.0.17`, six applied controls, structural counts, and the unsupported `chest_circumference = 110 cm` request/reason
 
-Do not add a database, large SPA framework, VPS render dependency, Telegram bot, or MCP for this proof.
+Do not mark P2V.2/P2V.3/P2V.4/P2V.7 complete until the actual phone behavior is confirmed. HTTP/file verification alone is not a visual/touch proof.
 
-After the real phone viewer proof is complete, return to P2.5 version/lock semantics and P2.6 two-revision proof, then proceed toward protected VPS asset delivery and Telegram.
+After Android confirmation, sync docs and return to P2.5 version/lock semantics and P2.6 two-revision proof, then proceed toward protected VPS asset delivery and Telegram.
 
 ## Working Rules
 
