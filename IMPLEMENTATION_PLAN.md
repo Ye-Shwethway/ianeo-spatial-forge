@@ -13,16 +13,16 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 ## P0 — Headless Blender Proof
 
 - [x] P0.1 Add minimal GitHub Actions workflow with manual dispatch.
-- [ ] P0.2 Install or provision a pinned Blender version on `ubuntu-latest`.
-- [ ] P0.3 Add one tiny Blender Python smoke script.
-- [ ] P0.4 Generate a deterministic primitive test scene.
-- [ ] P0.5 Export `.blend` and `.glb`.
-- [ ] P0.6 Render one lightweight preview image.
-- [ ] P0.7 Upload outputs as GitHub Actions artifacts.
-- [ ] P0.8 Run workflow and inspect actual artifact outputs.
-- [ ] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
+- [x] P0.2 Install or provision a pinned Blender version on `ubuntu-latest`.
+- [x] P0.3 Add one tiny Blender Python smoke script.
+- [x] P0.4 Generate a deterministic primitive test scene.
+- [x] P0.5 Export `.blend` and `.glb`.
+- [x] P0.6 Render one lightweight preview image.
+- [x] P0.7 Upload outputs as GitHub Actions artifacts.
+- [x] P0.8 Run workflow and inspect actual artifact outputs.
+- [x] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
 
-**P0 gate:** do not add MPFB, VPS, Telegram, or MCP until the headless Blender workflow passes.
+**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `spatial-forge-smoke.blend` (441,202 bytes), `spatial-forge-smoke.glb` (3,016 bytes), and `preview.png` (291,816 bytes). The preview was visually inspected and showed the expected cube/ground test scene. First run failed only because `libEGL.so.1` was absent on the runner; installing `libegl1` fixed the headless render runtime.
 
 ## P1 — Human Generation Proof
 
@@ -102,4 +102,6 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - Never introduce a paid dependency without explicit Creator approval.
 - Keep production path simple; avoid broad test matrices and speculative guards.
 - Do not claim a slice passed until its actual runtime output has been inspected.
+- For Actions-backed slices, verify in this order when available: workflow run → jobs/steps → failed job logs → artifact list → downloaded artifact contents → visual output inspection.
+- Issues are for durable project discussion/tracking, not a required mechanism for checking workflow state.
 - Update docs after every completed slice before moving on.
