@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PATH=/usr/sbin:/sbin:/usr/bin:/bin
+export PATH
+
 ROOT=/srv/ianeo-spatial-forge
 RUNTIME_USER=spatialforge
 DEPLOY_USER=eidolon-deploy
