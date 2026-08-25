@@ -70,6 +70,22 @@ Avoid by default:
 
 Add a stronger test only when a real regression or risk justifies it.
 
+## GitHub Actions Verification Loop
+
+IANEO should inspect Actions directly through the GitHub connector. Do not create a GitHub issue merely to learn whether a workflow passed.
+
+For a runtime-backed slice, use the smallest relevant portion of this loop:
+1. identify the workflow run for the relevant commit
+2. inspect jobs and step conclusions
+3. if failed, fetch the failed job log and repair the concrete root cause
+4. if successful, fetch the artifact list
+5. download the relevant artifact when output inspection matters
+6. inspect filenames, non-zero sizes, and format/content as appropriate
+7. visually inspect generated previews when the slice makes a visual claim
+8. only then mark the runtime slice complete and sync docs
+
+A green workflow icon alone is not proof of correct output.
+
 ## Documentation Discipline
 
 `IMPLEMENTATION_PLAN.md` is the slice checklist.
