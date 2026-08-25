@@ -60,14 +60,11 @@ function copyResponseHeaders(upstream) {
 }
 
 export async function onRequest(context) {
-  const { request, env, params } = context;
+  const { request, params } = context;
+  const accessJwt = request.headers.get('Cf-Access-Jwt-Assertion');
 
-  if (!request.headers.get('Cf-Access-Jwt-Assertion')) {
+  if (!accessJwt) {
     return json(401, { error: 'access_required' });
-  }
-
-  if (!env.CF_ACCESS_CLIENT_ID || !env.CF_ACCESS_CLIENT_SECRET) {
-    return json(503, { error: 'api_proxy_not_configured' });
   }
 
   const path = normalizedPath(params.path);
@@ -76,8 +73,7 @@ export async function onRequest(context) {
   }
 
   const upstreamHeaders = new Headers();
-  upstreamHeaders.set('CF-Access-Client-Id', env.CF_ACCESS_CLIENT_ID);
-  upstreamHeaders.set('CF-Access-Client-Secret', env.CF_ACCESS_CLIENT_SECRET);
+  upstreamHeaders.set('Cf-Access-Token', accessJwt);
   const contentType = request.headers.get('content-type');
   if (contentType) upstreamHeaders.set('Content-Type', contentType);
 
