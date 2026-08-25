@@ -11,6 +11,11 @@ from mathutils import Vector
 
 
 CONTROL_NAMES = ("gender", "age", "muscle", "weight", "height", "proportions")
+MEASUREMENT_UNITS = {"cm", "in", "kg", "lb", "percent"}
+UNSUPPORTED_MEASUREMENT_REASON = (
+    "MPFB 2.0.17 has no proven direct control that guarantees this exact real-world "
+    "measurement; the request is preserved as intent and was not applied as an engine control."
+)
 
 
 def find_mpfb_module():
@@ -41,10 +46,11 @@ def version_string(version):
 def load_manifest(path: Path):
     data = json.loads(path.read_text(encoding="utf-8"))
 
-    expected_root = {"schema_version", "character_id", "version", "generator", "phenotype"}
-    if set(data) != expected_root:
-        extra = sorted(set(data) - expected_root)
-        missing = sorted(expected_root - set(data))
+    required_root = {"schema_version", "character_id", "version", "generator", "phenotype"}
+    allowed_root = required_root | {"requested_measurements"}
+    extra = sorted(set(data) - allowed_root)
+    missing = sorted(required_root - set(data))
+    if extra or missing:
         raise ValueError(f"Manifest root fields mismatch; extra={extra}, missing={missing}")
     if data["schema_version"] != "1.0":
         raise ValueError("Unsupported character manifest schema_version")
@@ -66,7 +72,37 @@ def load_manifest(path: Path):
             raise ValueError(f"phenotype.{name} must be within 0.0..1.0")
         phenotype[name] = float(value)
 
+    requested_measurements = data.get("requested_measurements", [])
+    if not isinstance(requested_measurements, list):
+        raise ValueError("requested_measurements must be an array")
+    for index, request in enumerate(requested_measurements):
+        if not isinstance(request, dict) or set(request) != {"field", "value", "unit"}:
+            raise ValueError(f"requested_measurements[{index}] must contain exactly field, value, unit")
+        field = request["field"]
+        if not isinstance(field, str) or not field or not field[0].isalpha() or not all(
+            char.islower() or char.isdigit() or char == "_" for char in field
+        ):
+            raise ValueError(f"requested_measurements[{index}].field must be lower snake_case")
+        value = request["value"]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"requested_measurements[{index}].value must be numeric")
+        request["value"] = float(value)
+        if request["unit"] not in MEASUREMENT_UNITS:
+            raise ValueError(f"requested_measurements[{index}].unit is unsupported")
+
     return data
+
+
+def unsupported_measurements(manifest):
+    return [
+        {
+            "field": request["field"],
+            "requested_value": request["value"],
+            "unit": request["unit"],
+            "reason": UNSUPPORTED_MEASUREMENT_REASON,
+        }
+        for request in manifest.get("requested_measurements", [])
+    ]
 
 
 def look_at(obj, target: Vector):
@@ -144,6 +180,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = load_manifest(manifest_path)
+    unsupported = unsupported_measurements(manifest)
     mpfb = find_mpfb_module()
     actual_mpfb = version_string(mpfb.VERSION)
     if actual_mpfb != expected_mpfb:
@@ -244,7 +281,7 @@ def main():
             "mpfb": actual_mpfb,
         },
         "applied_controls": dict(manifest["phenotype"]),
-        "unsupported_fields": [],
+        "unsupported_fields": unsupported,
         "outputs": [
             output_entry("blend", blend_path),
             output_entry("glb", glb_path),
@@ -261,6 +298,7 @@ def main():
     print("Blender:", bpy.app.version_string)
     print("MPFB:", actual_mpfb)
     print("Applied controls:", result["applied_controls"])
+    print("Unsupported measurements:", unsupported)
     print("Structural:", structural)
     print("Output:", output_dir)
 
