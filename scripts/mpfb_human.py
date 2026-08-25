@@ -90,6 +90,11 @@ def main():
     human.name = "GenericHuman"
     add_neutral_material(human)
 
+    rig = HumanService.add_builtin_rig(human, "game_engine")
+    if rig is None:
+        raise RuntimeError("MPFB failed to create game_engine rig")
+    rig.name = "GenericHumanRig"
+
     bbox_min, bbox_max = world_bounds(human)
     center = (bbox_min + bbox_max) * 0.5
     height = bbox_max.z - bbox_min.z
@@ -132,7 +137,8 @@ def main():
 
     bpy.ops.object.select_all(action="DESELECT")
     human.select_set(True)
-    bpy.context.view_layer.objects.active = human
+    rig.select_set(True)
+    bpy.context.view_layer.objects.active = rig
     bpy.ops.export_scene.gltf(
         filepath=str(glb_path),
         export_format="GLB",
@@ -151,6 +157,8 @@ def main():
     render_view(scene, camera, center, three_quarter_location, output_dir / "three-quarter.png")
 
     print("Human object:", human.name)
+    print("Rig object:", rig.name)
+    print("Rig bones:", len(rig.data.bones))
     print("Bounds min:", tuple(round(v, 4) for v in bbox_min))
     print("Bounds max:", tuple(round(v, 4) for v in bbox_max))
     print("Generated:", blend_path.name, glb_path.name, "front.png", "three-quarter.png")
