@@ -65,17 +65,28 @@ jobs:
 
       - name: Verify live demo assets
         run: |
-          curl --fail --silent --show-error --retry 6 --retry-delay 3 \
-            https://forge.drthorne.uk/demo/build-result.json \
-            | grep -q 'generic-unsupported'
-          curl --fail --silent --show-error --retry 6 --retry-delay 3 \
+          ready=false
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error \
+              https://forge.drthorne.uk/demo/build-result.json \
+              | grep -q 'generic-unsupported'; then
+              ready=true
+              break
+            fi
+            sleep 3
+          done
+          test "$ready" = true
+
+          curl --fail --silent --show-error \
             --output /tmp/model.glb \
             https://forge.drthorne.uk/demo/generic-unsupported-v1.glb
           test "$(wc -c < /tmp/model.glb)" -gt 8000000
-          curl --fail --silent --show-error --retry 6 --retry-delay 3 \
+
+          curl --fail --silent --show-error \
             --output /tmp/front.png \
             https://forge.drthorne.uk/demo/front.png
           test "$(wc -c < /tmp/front.png)" -gt 100000
-          curl --fail --silent --show-error --retry 6 --retry-delay 3 \
+
+          curl --fail --silent --show-error \
             'https://forge.drthorne.uk/?model=/demo/generic-unsupported-v1.glb&meta=/demo/build-result.json&front=/demo/front.png&threeQuarter=/demo/three-quarter.png&title=Generic%20Character%20P2.4' \
             | grep -q 'IANEO Spatial Forge'
