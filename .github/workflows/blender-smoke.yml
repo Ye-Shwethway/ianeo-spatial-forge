@@ -1,0 +1,64 @@
+name: Blender Headless Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/blender-smoke.yml"
+      - "scripts/blender_smoke.py"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BLENDER_VERSION: "4.5.12"
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 \
+            "$BLENDER_URL" \
+            --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Run headless smoke build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SF_OUTPUT_DIR"
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --factory-startup \
+            --python scripts/blender_smoke.py
+
+      - name: Verify outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$SF_OUTPUT_DIR/spatial-forge-smoke.blend"
+          test -s "$SF_OUTPUT_DIR/spatial-forge-smoke.glb"
+          test -s "$SF_OUTPUT_DIR/preview.png"
+          ls -lh "$SF_OUTPUT_DIR"
+
+      - name: Upload smoke artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-blender-smoke
+          path: output/
+          if-no-files-found: error
+          retention-days: 7
