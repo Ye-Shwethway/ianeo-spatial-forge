@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
           "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
 
       - name: Run MPFB human build
