@@ -22,7 +22,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P0.8 Run workflow and inspect actual artifact outputs.
 - [x] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
 
-**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `spatial-forge-smoke.blend` (441,202 bytes), `spatial-forge-smoke.glb` (3,016 bytes), and `preview.png` (291,816 bytes). The preview was visually inspected and showed the expected cube/ground test scene. First run failed only because `libEGL.so.1` was absent on the runner; installing `libegl1` fixed the headless render runtime.
+**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `spatial-forge-smoke.blend`, `.glb`, and preview.
 
 ## P1 — Human Generation Proof
 
@@ -35,13 +35,11 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P1.7 Render front and three-quarter lightweight previews.
 - [x] P1.8 Inspect downloaded artifacts and record runtime/file-structure observations.
 
-**P1 runtime proof:** Blender `4.5.12 LTS` with MPFB `2.0.17`; successful rigged workflow run `32860562804` on commit `691939711d29e552d8920a48b6df8b7e091f7c84`. Artifact `spatial-forge-mpfb-human` was downloaded and inspected. It contained `generic-human.blend` (8,438,771 bytes), `generic-human.glb` (8,689,428 bytes), `front.png` (355,928 bytes), and `three-quarter.png` (357,028 bytes). Both previews were visually inspected and showed the expected generic human. The GLB JSON chunk was inspected directly and contained 1 mesh, 1 skin, and 53 rig joints. MPFB's built-in `game_engine` rig therefore survived GLB export. The first P1 attempt failed because Blender extension sync was blocked by online-access preference; using Blender's `--online-mode` on the extension-install command fixed the install path.
-
-**P1 privacy gate:** PASS — only a generic non-canonical human and non-sensitive parameters were used.
+**P1 runtime proof:** Blender `4.5.12 LTS` with MPFB `2.0.17`; run `32860562804`; GLB contained 1 mesh definition, 1 skin, and 53 joints.
 
 ## P2 — Minimal Character Manifest
 
-- [x] P2.0 Research current agent-oriented Blender creation patterns and add a project-specific `spatial-forge-3d` skill covering reproducible creation, truthful precision, scoped revisions, structural + visual validation, export/fresh-import checks, version-aware reference policy, and late-stage-only MCP policy.
+- [x] P2.0 Research current agent-oriented Blender creation patterns and add `skills/spatial-forge-3d/`.
 - [x] P2.1 Define compact JSON schema for character build input.
 - [x] P2.2 Define build-result metadata schema.
 - [x] P2.3 Map supported manifest fields to engine controls.
@@ -49,31 +47,25 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [ ] P2.5 Add version identifier and scoped revision/lock semantics.
 - [ ] P2.6 Build two versions of a generic test character and verify scoped changes.
 
-**P2 workflow intelligence:** `skills/spatial-forge-3d/SKILL.md` is the routing layer for Blender/MPFB/3D work. Its references define the smallest-build contract, deterministic manifest/Python source rule, fixed visual evidence, structural-vs-visual gates, GLB fresh-import validation when relevant, and Blender/MPFB reference hierarchy. The proven baseline remains Blender `4.5.12 LTS` + MPFB `2.0.17`; external skills are methodology references, not runtime dependencies.
+**P2.1–P2.3 runtime proof:** run `32864360900`; exactly six normalized MPFB controls applied; clean fresh import succeeded with 2 mesh objects, 1 armature, and 53 bones.
 
-**P2.1–P2.3 runtime proof:** `schemas/character-build.schema.json` and `schemas/build-result.schema.json` passed Draft 2020-12 static validation. `fixtures/generic-character-v1.json` contains only the six runtime-proven normalized MPFB controls: gender, age, muscle, weight, height, and proportions. Character Manifest Proof run `32864360900` on commit `53c5e16bb68a4b588409cb524c0904fbb324225a` passed every step. The inspected artifact reported Blender `4.5.12 LTS`, MPFB `2.0.17`, exactly the six requested applied controls, 1 GLB mesh definition, 1 skin, and 53 joints. Front and three-quarter previews were visually inspected and showed the expected generic human. A separate clean-Blender fresh import of `generic-character-v1.glb` succeeded with 2 mesh objects, 1 armature, and 53 bones. The manifest builder asserts `mpfb.VERSION == 2.0.17`, so extension drift now fails visibly instead of silently changing the proven runtime.
-
-**P2.4 runtime proof:** Character Manifest Proof run `32864975879` on commit `595bcb5b9768d1f341fac93c803237a0029f3f39` completed successfully. The downloaded artifact preserved the requested `chest_circumference = 110 cm` only in `unsupported_fields`, with a clear reason that MPFB `2.0.17` has no proven direct control guaranteeing that exact real-world measurement. `applied_controls` still contained only the six proven MPFB macros. The build produced a valid GLB with 1 mesh definition, 1 skin, and 53 joints; clean fresh import succeeded with 2 mesh objects, 1 armature, and 53 joints. This proves unsupported exact measurements are reported rather than silently fabricated.
+**P2.4 runtime proof:** run `32864975879`; exact `chest_circumference = 110 cm` was preserved only in `unsupported_fields`, not fabricated as an engine control; GLB remained valid.
 
 ## P2V — Phone Viewer Foundation (pulled forward)
-
-Reason: the Creator currently needs a phone-first inspection surface before the remaining P2 revision work. This is a deliberate usability slice, not a replacement for P2.5/P2.6.
 
 - [x] P2V.1 Add a framework-free mobile viewer shell under `viewer/`.
 - [ ] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
 - [ ] P2V.3 Display optional front and three-quarter preview URLs.
 - [ ] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
 - [x] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
-- [ ] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
+- [x] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
 - [ ] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
 
-**P2V.1 runtime proof:** `viewer/index.html`, `viewer/app.js`, `viewer/styles.css`, and `viewer/README.md` now define a framework-free, stateless mobile viewer. `@google/model-viewer` is explicitly pinned to `4.3.1`. Viewer Smoke run `32866763601` on commit `580048d40ec5189317a30698305faa4956b45514` completed successfully: the workflow served `viewer/` through a local HTTP server and fetched/verified the HTML, JavaScript, CSS, pinned viewer dependency reference, and URL-driven app wiring. This proves the static shell is serveable; real GLB rendering/touch behavior remains P2V.2/P2V.7 and is not yet claimed.
+**P2V.1 runtime proof:** Viewer Smoke run `32866763601` passed serving/fetch verification for the static shell and pinned `@google/model-viewer@4.3.1` wiring.
 
-**P2V.5 contract:** `viewer/README.md` defines a stateless explicit URL contract: `model`, `meta`, `front`, `threeQuarter`, and `title`. The asset host must permit browser access/CORS. The viewer owns no database, account, build registry, or storage.
+**P2V.5 contract:** `viewer/README.md` defines stateless `model`, `meta`, `front`, `threeQuarter`, and `title` URL inputs. The viewer owns no database or storage.
 
-**P2V.6 hosting foundation (in progress):** Cloudflare Pages project `ianeo-spatial-forge` exists with production branch `main`, framework none, root directory `viewer`, empty build command, output directory `.`, and build caching disabled. Custom domain `forge.drthorne.uk` is attached with one proxied CNAME to `ianeo-spatial-forge.pages.dev`. No Worker, D1, KV, R2, Tunnel, or other service was created. There is no deployment yet because GitHub source binding is still pending, so P2V.6 is not complete and HTTPS/runtime is not yet claimed.
-
-**Viewer boundary:** The initial viewer is static and must not require the VPS merely to render a model. The VPS becomes the later protected/private asset and control backend. Prefer a small web component/vanilla JavaScript implementation over a large SPA framework. Keep the viewer compatible with later Telegram Mini App embedding.
+**P2V.6 runtime proof:** Cloudflare native Git integration was abandoned after repeated integration failure. The canonical deployment path is now GitHub Actions → Wrangler → Cloudflare Pages Direct Upload. Workflow `.github/workflows/deploy-pages.yml` deploys `viewer/` with Node 22, `contents: read`, production concurrency, and repository secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`. First production deploy run `32876020417` on commit `4901727e1b72a29ba5ec2692afdbf3da8cf85d39` succeeded. Verification run `32876094428` on commit `411036bcf9e57cd5faec4ee69fa32725ec2e7bce` also succeeded and fetched both `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/` over HTTPS, confirming expected Spatial Forge page content. Cloudflare Pages project remains `ianeo-spatial-forge`; no Worker, D1, KV, R2, Tunnel, or database was added.
 
 ## P3 — VPS Control Plane
 
@@ -83,8 +75,6 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 - [ ] P3.4 Add build status and protected asset retrieval.
 - [ ] P3.5 Establish GitHub Actions deployment as the normal update path.
 - [ ] P3.6 Remove Bamboo from the normal operational workflow.
-
-**Bamboo note:** Bamboo may be used only as a temporary bootstrap helper for P3.2 or emergency repair. Do not encode Bamboo as a permanent component, dependency, or recurring implementation step.
 
 ## P4 — Telegram Delivery + Mini App
 
@@ -96,14 +86,12 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 
 ## P5 — MCP Control
 
-- [ ] P5.1 Introduce MCP only after the build pipeline, manifest semantics, control plane, and phone delivery are independently proven without MCP.
+- [ ] P5.1 Introduce MCP only after build, manifest semantics, control plane, and phone delivery are independently proven.
 - [ ] P5.2 Implement a minimal MCP server over already-proven backend operations.
 - [ ] P5.3 Expose read/status tools first.
 - [ ] P5.4 Add narrow build/create actions.
 - [ ] P5.5 Add revision action only after version/lock semantics pass.
-- [ ] P5.6 Verify Creator → external IANEO session → MCP → proven Spatial Forge backend → Telegram/web viewer loop.
-
-**MCP boundary:** During implementation and verification, preserve access to built-in repository/connectors. MCP is a late external control adapter, not a core implementation dependency, and must not dictate schemas, file formats, generation scripts, or validation semantics.
+- [ ] P5.6 Verify the full external IANEO → MCP → Spatial Forge → Telegram/web viewer loop.
 
 ## P6 — Character Canon and Revisions
 
@@ -111,7 +99,7 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 - [ ] P6.2 Persist approved manifests privately.
 - [ ] P6.3 Add reusable pose assets.
 - [ ] P6.4 Add side-by-side version metadata/preview comparison.
-- [ ] P6.5 Prove `body locked, face only` style revisions without unrelated drift.
+- [ ] P6.5 Prove scoped revisions without unrelated drift.
 
 ## P7 — Spatial Scene Forge
 
@@ -119,7 +107,7 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 - [ ] P7.2 Multi-character placement and scale consistency.
 - [ ] P7.3 Camera/lens controls.
 - [ ] P7.4 Lighting presets.
-- [ ] P7.5 Spatial reference renders for downstream image generation.
+- [ ] P7.5 Spatial reference renders.
 
 ## P8 — Optional Flutter Client
 
@@ -129,12 +117,9 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 ## Permanent Rules
 
 - Never commit secrets, credentials, tokens, private keys, private canon, or private generated assets.
-- Never rely on repository secrecy; this repository is intentionally public.
 - Never introduce a paid dependency without explicit Creator approval.
 - Keep production path simple; avoid broad test matrices and speculative guards.
-- Read `skills/spatial-forge-3d/SKILL.md` for Blender/MPFB/3D creation or validation work.
-- Read `skills/spatial-forge-ui/SKILL.md` for web, Telegram Mini App, Flutter, layout, visual-system, interaction, or accessibility work.
-- Do not claim a slice passed until its actual runtime output has been inspected.
-- For Actions-backed slices, verify in this order when available: workflow run → jobs/steps → failed job logs → artifact list → downloaded artifact contents → fresh-import validation when relevant → visual output inspection.
-- Issues are for durable project discussion/tracking, not a required mechanism for checking workflow state.
+- Read `skills/spatial-forge-3d/SKILL.md` for 3D work.
+- Read `skills/spatial-forge-ui/SKILL.md` for UI work.
+- Do not claim a slice passed until actual runtime output has been inspected.
 - Update docs after every completed slice before moving on.
