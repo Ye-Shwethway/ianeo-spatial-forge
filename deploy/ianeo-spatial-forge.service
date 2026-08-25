@@ -12,6 +12,7 @@ Environment=SF_HOST=127.0.0.1
 Environment=SF_PORT=18792
 Environment=SF_ROOT=/srv/ianeo-spatial-forge
 Environment=SF_VIEWER_ORIGIN=https://forge.drthorne.uk
+Environment=SF_ASSET_ORIGIN=https://assets.drthorne.uk
 ExecStart=/usr/bin/python3 /srv/ianeo-spatial-forge/app/control-plane/server.py
 Restart=on-failure
 RestartSec=3
