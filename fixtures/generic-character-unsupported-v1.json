@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "character_id": "generic-unsupported",
+  "version": 1,
+  "generator": {
+    "engine": "mpfb"
+  },
+  "phenotype": {
+    "gender": 1.0,
+    "age": 0.36,
+    "muscle": 0.72,
+    "weight": 0.48,
+    "height": 0.62,
+    "proportions": 0.58
+  },
+  "requested_measurements": [
+    {
+      "field": "chest_circumference",
+      "value": 110.0,
+      "unit": "cm"
+    }
+  ]
+}
