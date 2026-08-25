@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>IANEO Spatial Forge Viewer</title>
+  <title>IANEO Spatial Forge</title>
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="https://unpkg.com/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
 </head>
@@ -13,7 +13,7 @@
     <header class="topbar">
       <div>
         <div class="eyebrow">IANEO Spatial Forge</div>
-        <h1 id="title">3D Viewer</h1>
+        <h1 id="title">Asset Library</h1>
       </div>
       <div class="topbar-actions">
         <span id="status" class="status">Ready</span>
@@ -21,58 +21,70 @@
       </div>
     </header>
 
-    <section class="card viewer-card">
-      <model-viewer
-        id="model"
-        with-credentials
-        camera-controls
-        touch-action="pan-y"
-        shadow-intensity="0.8"
-        exposure="1"
-        interaction-prompt="auto"
-        alt="Spatial Forge 3D model">
-        <button id="resetCamera" class="reset" slot="poster" type="button">Reset view</button>
-      </model-viewer>
-      <div class="viewer-actions">
-        <button id="resetButton" type="button">Reset view</button>
-        <a id="downloadModel" class="button-link hidden" download>Download GLB</a>
-      </div>
-      <p id="modelHint" class="hint">Supply a <code>?model=...</code> URL to inspect a GLB.</p>
-    </section>
-
-    <section id="previewSection" class="card hidden">
-      <h2>Visual evidence</h2>
-      <div class="preview-grid">
-        <figure id="frontFigure" class="hidden">
-          <img id="frontPreview" crossorigin="use-credentials" alt="Front preview">
-          <figcaption>Front</figcaption>
-        </figure>
-        <figure id="threeQuarterFigure" class="hidden">
-          <img id="threeQuarterPreview" crossorigin="use-credentials" alt="Three-quarter preview">
-          <figcaption>Three-quarter</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Build details</h2>
-      <div id="metadataEmpty" class="empty">Supply <code>?meta=...</code> to load a Spatial Forge build-result JSON file.</div>
-      <div id="metadata" class="hidden">
-        <dl id="summary" class="summary"></dl>
-        <h3>Applied controls</h3>
-        <div id="controls" class="chips"></div>
-        <div id="unsupportedSection" class="hidden">
-          <h3>Unsupported requests</h3>
-          <div id="unsupported" class="warning-list"></div>
+    <section id="librarySection" class="card library-card">
+      <div class="section-heading">
+        <div>
+          <h2>Private builds</h2>
+          <p class="hint compact">Stored on the protected Spatial Forge VPS.</p>
         </div>
+        <button id="refreshLibrary" type="button">Refresh</button>
       </div>
+      <div id="libraryMessage" class="empty">Loading builds…</div>
+      <div id="buildList" class="build-list"></div>
     </section>
 
-    <details class="card contract">
-      <summary>Viewer URL contract</summary>
-      <p>All inputs are explicit URLs. The viewer stores nothing.</p>
-      <code>?model=&lt;glb-url&gt;&amp;meta=&lt;build-result-json-url&gt;&amp;front=&lt;png-url&gt;&amp;threeQuarter=&lt;png-url&gt;&amp;title=&lt;label&gt;</code>
-    </details>
+    <div id="viewerMode" class="hidden">
+      <div class="viewer-nav">
+        <a class="button-link" href="/">← Asset Library</a>
+      </div>
+
+      <section class="card viewer-card">
+        <model-viewer
+          id="model"
+          with-credentials
+          camera-controls
+          touch-action="pan-y"
+          shadow-intensity="0.8"
+          exposure="1"
+          interaction-prompt="auto"
+          alt="Spatial Forge 3D model">
+          <button id="resetCamera" class="reset" slot="poster" type="button">Reset view</button>
+        </model-viewer>
+        <div class="viewer-actions">
+          <button id="resetButton" type="button">Reset view</button>
+          <a id="downloadModel" class="button-link hidden" download>Download GLB</a>
+        </div>
+        <p id="modelHint" class="hint">Supply a <code>?model=...</code> URL to inspect a GLB.</p>
+      </section>
+
+      <section id="previewSection" class="card hidden">
+        <h2>Visual evidence</h2>
+        <div class="preview-grid">
+          <figure id="frontFigure" class="hidden">
+            <img id="frontPreview" crossorigin="use-credentials" alt="Front preview">
+            <figcaption>Front</figcaption>
+          </figure>
+          <figure id="threeQuarterFigure" class="hidden">
+            <img id="threeQuarterPreview" crossorigin="use-credentials" alt="Three-quarter preview">
+            <figcaption>Three-quarter</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Build details</h2>
+        <div id="metadataEmpty" class="empty">Supply <code>?meta=...</code> to load a Spatial Forge build-result JSON file.</div>
+        <div id="metadata" class="hidden">
+          <dl id="summary" class="summary"></dl>
+          <h3>Applied controls</h3>
+          <div id="controls" class="chips"></div>
+          <div id="unsupportedSection" class="hidden">
+            <h3>Unsupported requests</h3>
+            <div id="unsupported" class="warning-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script type="module" src="./app.js"></script>
