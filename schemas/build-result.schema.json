@@ -16,58 +16,34 @@
     "structural"
   ],
   "properties": {
-    "schema_version": {
-      "type": "string",
-      "const": "1.0"
-    },
-    "character_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "version": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "status": {
-      "type": "string",
-      "enum": ["success", "failed"]
-    },
+    "schema_version": {"type": "string", "const": "1.0"},
+    "character_id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "status": {"type": "string", "enum": ["success", "failed"]},
     "runtime": {
       "type": "object",
       "additionalProperties": false,
       "required": ["blender", "mpfb"],
       "properties": {
-        "blender": {
-          "type": "string",
-          "minLength": 1
-        },
-        "mpfb": {
-          "type": "string",
-          "minLength": 1
-        }
+        "blender": {"type": "string", "minLength": 1},
+        "mpfb": {"type": "string", "minLength": 1}
       }
     },
     "applied_controls": {
       "type": "object",
-      "additionalProperties": {
-        "type": "number"
-      }
+      "additionalProperties": {"type": "number"}
     },
     "unsupported_fields": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["field", "reason"],
+        "required": ["field", "requested_value", "unit", "reason"],
         "properties": {
-          "field": {
-            "type": "string",
-            "minLength": 1
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 1
-          }
+          "field": {"type": "string", "minLength": 1},
+          "requested_value": {"type": "number"},
+          "unit": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
         }
       },
       "default": []
@@ -80,18 +56,9 @@
         "additionalProperties": false,
         "required": ["kind", "path", "bytes"],
         "properties": {
-          "kind": {
-            "type": "string",
-            "enum": ["blend", "glb", "preview", "metadata"]
-          },
-          "path": {
-            "type": "string",
-            "minLength": 1
-          },
-          "bytes": {
-            "type": "integer",
-            "minimum": 0
-          }
+          "kind": {"type": "string", "enum": ["blend", "glb", "preview", "metadata"]},
+          "path": {"type": "string", "minLength": 1},
+          "bytes": {"type": "integer", "minimum": 0}
         }
       }
     },
@@ -100,26 +67,14 @@
       "additionalProperties": false,
       "required": ["mesh_count", "skin_count", "joint_count"],
       "properties": {
-        "mesh_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "skin_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "joint_count": {
-          "type": "integer",
-          "minimum": 0
-        }
+        "mesh_count": {"type": "integer", "minimum": 0},
+        "skin_count": {"type": "integer", "minimum": 0},
+        "joint_count": {"type": "integer", "minimum": 0}
       }
     },
     "visual_evidence": {
       "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
+      "items": {"type": "string", "minLength": 1},
       "default": []
     }
   }
