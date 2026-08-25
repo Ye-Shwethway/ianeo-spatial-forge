@@ -59,13 +59,15 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 Reason: the Creator currently needs a phone-first inspection surface before the remaining P2 revision work. This is a deliberate usability slice, not a replacement for P2.5/P2.6.
 
-- [ ] P2V.1 Add a framework-free mobile viewer shell under `viewer/`.
+- [x] P2V.1 Add a framework-free mobile viewer shell under `viewer/`.
 - [ ] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
 - [ ] P2V.3 Display optional front and three-quarter preview URLs.
 - [ ] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
 - [ ] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
 - [ ] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
 - [ ] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
+
+**P2V.1 runtime proof:** `viewer/index.html`, `viewer/app.js`, `viewer/styles.css`, and `viewer/README.md` now define a framework-free, stateless mobile viewer. `@google/model-viewer` is explicitly pinned to `4.3.1`. Viewer Smoke run `32866763601` on commit `580048d40ec5189317a30698305faa4956b45514` completed successfully: the workflow served `viewer/` through a local HTTP server and fetched/verified the HTML, JavaScript, CSS, pinned viewer dependency reference, and URL-driven app wiring. This proves the static shell is serveable; real GLB rendering/touch behavior remains P2V.2/P2V.7 and is not yet claimed.
 
 **Viewer boundary:** The initial viewer is static and must not require the VPS merely to render a model. The VPS becomes the later protected/private asset and control backend. Prefer a small web component/vanilla JavaScript implementation over a large SPA framework. Keep the viewer compatible with later Telegram Mini App embedding.
 
