@@ -5,16 +5,7 @@
   "description": "Machine-readable metadata emitted by a Spatial Forge character build. Structural facts are recorded separately from visual evidence and visual judgment.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "character_id",
-    "version",
-    "status",
-    "runtime",
-    "applied_controls",
-    "outputs",
-    "structural"
-  ],
+  "required": ["schema_version", "character_id", "version", "status", "runtime", "applied_controls", "outputs", "structural"],
   "properties": {
     "schema_version": {"type": "string", "const": "1.0"},
     "character_id": {"type": "string", "minLength": 1},
@@ -29,9 +20,15 @@
         "mpfb": {"type": "string", "minLength": 1}
       }
     },
-    "applied_controls": {
+    "applied_controls": {"type": "object", "additionalProperties": {"type": "number"}},
+    "revision": {
       "type": "object",
-      "additionalProperties": {"type": "number"}
+      "additionalProperties": false,
+      "required": ["parent_version", "locked_fields"],
+      "properties": {
+        "parent_version": {"type": "integer", "minimum": 1},
+        "locked_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
     },
     "unsupported_fields": {
       "type": "array",
@@ -72,10 +69,6 @@
         "joint_count": {"type": "integer", "minimum": 0}
       }
     },
-    "visual_evidence": {
-      "type": "array",
-      "items": {"type": "string", "minLength": 1},
-      "default": []
-    }
+    "visual_evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []}
   }
 }
