@@ -12,79 +12,100 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P0 — Headless Blender Proof
 
-- [x] P0.1 Add minimal GitHub Actions workflow with manual dispatch.
-- [x] P0.2 Install or provision a pinned Blender version on `ubuntu-latest`.
-- [x] P0.3 Add one tiny Blender Python smoke script.
-- [x] P0.4 Generate a deterministic primitive test scene.
-- [x] P0.5 Export `.blend` and `.glb`.
-- [x] P0.6 Render one lightweight preview image.
-- [x] P0.7 Upload outputs as GitHub Actions artifacts.
-- [x] P0.8 Run workflow and inspect actual artifact outputs.
-- [x] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
+- [x] P0.1–P0.9 Headless Blender build/export/preview/artifact proof.
 
-**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`.
+**Proof:** Blender `4.5.12 LTS`; run `32859113238`; commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`.
 
 ## P1 — Human Generation Proof
 
-- [x] P1.1 Determine the smallest reliable MPFB installation path for headless Blender.
-- [x] P1.2 Pin MPFB/tool versions and document licenses/source.
-- [x] P1.3 Generate one generic non-canonical human from script.
-- [x] P1.4 Control a small set of body/phenotype parameters.
-- [x] P1.5 Attach a supported rig if the headless path is reliable.
-- [x] P1.6 Export GLB with mesh + skin + joints.
-- [x] P1.7 Render front and three-quarter lightweight previews.
-- [x] P1.8 Inspect downloaded artifacts and record runtime/file-structure observations.
+- [x] P1.1–P1.8 MPFB human generation, rig, GLB and preview proof.
 
-**P1 runtime proof:** Blender `4.5.12 LTS` with MPFB `2.0.17`; run `32860562804`; GLB contained 1 mesh definition, 1 skin, and 53 joints.
+**Proof:** Blender `4.5.12 LTS`, MPFB `2.0.17`; run `32860562804`; GLB contained 1 mesh definition, 1 skin, 53 joints.
 
 ## P2 — Minimal Character Manifest
 
-- [x] P2.0 Research current agent-oriented Blender creation patterns and add `skills/spatial-forge-3d/`.
-- [x] P2.1 Define compact JSON schema for character build input.
-- [x] P2.2 Define build-result metadata schema.
-- [x] P2.3 Map supported manifest fields to engine controls.
-- [x] P2.4 Add explicit unsupported-field reporting; never silently fake precision.
-- [x] P2.5 Add version identifier and scoped revision/lock semantics.
-- [x] P2.6 Build two versions of a generic test character and verify scoped changes.
+- [x] P2.0 Spatial Forge 3D skill.
+- [x] P2.1 Character build schema.
+- [x] P2.2 Build-result schema.
+- [x] P2.3 Proven manifest-to-engine controls.
+- [x] P2.4 Explicit unsupported-field reporting.
+- [x] P2.5 Version/lock semantics.
+- [x] P2.6 Scoped revision proof.
 
-**P2.1–P2.4 proof:** runs `32864360900` and `32864975879` proved six normalized MPFB controls, fresh-import validity, and explicit unsupported exact-measurement reporting.
+**Proof:** runs `32864360900`, `32864975879`, and revision run `32877860898`. Six MPFB controls are proven. Unsupported exact measurements are reported rather than fabricated. v1→v2 changed only `muscle` `0.72→0.52`; five declared locks stayed exact; fresh import remained valid with 2 mesh objects, 1 armature, 53 joints.
 
-**P2.5/P2.6 runtime proof:** Character Revision Proof run `32877860898` on commit `137dafa67823894a1dfc95d3aa96370996d3739b` completed successfully. Only `muscle` changed from `0.72` to `0.52`; five declared phenotype locks remained exact. v2 fresh import succeeded with 2 mesh objects, 1 armature, and 53 joints. Preview pairs were inspected; no stronger appearance claim is made beyond the proven scoped engine change.
+## P2V — Phone Viewer Foundation
 
-## P2V — Phone Viewer Foundation (pulled forward)
+- [x] P2V.1–P2V.7 Framework-free mobile viewer, URL contract, Pages deployment, Android verification.
 
-- [x] P2V.1 Add a framework-free mobile viewer shell under `viewer/`.
-- [x] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
-- [x] P2V.3 Display optional front and three-quarter preview URLs.
-- [x] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
-- [x] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
-- [x] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
-- [x] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
+**Proof:** Viewer Smoke `32866763601`; Direct Upload `32876020417` / `32876094428`; demo `32876486511`; Android rendering/touch/previews/metadata confirmed.
 
-**P2V runtime proof:** Viewer Smoke run `32866763601`, Direct Upload runs `32876020417` / `32876094428`, and generic demo run `32876486511` proved the mobile viewer and live delivery. The Creator confirmed real Android rendering, touch interaction, previews, and truthful metadata.
-
-**Privacy boundary:** `/demo/` is generic public-safe only. Canonical/private character manifests, GLBs, previews, references, and metadata must never be deployed as static public Pages assets.
+**Privacy boundary:** `/demo/` is generic public-safe only. Canonical/private manifests, GLBs, previews, references, and metadata must never be deployed as public Pages files.
 
 ## P3 — VPS Control Plane
 
 - [x] P3.1 Define minimal authenticated HTTP/job interface.
 - [x] P3.2 Bootstrap service directories and least-privilege service account on VPS.
-- [ ] P3.3 Add temporary job storage with expiry/cleanup.
-- [ ] P3.4 Add build status and protected asset retrieval.
+- [x] P3.3 Add temporary session storage with expiry/cleanup.
+- [ ] P3.4 Complete protected asset retrieval through a real HTTPS private asset origin.
 - [x] P3.5 Establish GitHub Actions deployment as the normal update path.
-- [ ] P3.6 Remove Bamboo from the normal operational workflow.
+- [x] P3.6 Remove Bamboo/Termux from normal operational workflow.
 
-**P3.1 contract:** `docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines the public viewer/private VPS split. `control-plane/server.py` implements the first stdlib-only service: public `/health`, bearer-authenticated private build status + viewer-session creation, and temporary read-only `/s/{session_id}/{asset}` delivery limited to GLB, build-result JSON, front PNG, and three-quarter PNG. Session IDs are high entropy; control credentials never enter viewer URLs.
+### P3.1 contract
 
-**P3 pre-VPS proof:** Control Plane Smoke run `32880493854` passed syntax, health, bearer authorization, temporary session creation, and protected asset retrieval in an isolated runner root. After the first VPS bootstrap attempt revealed a non-interactive PATH issue before any mutation, `deploy/bootstrap-vps.sh` was corrected to set `PATH=/usr/sbin:/sbin:/usr/bin:/bin`; verification run `32881012007` on commit `0292d8e286838e4823b681009cac04252cd4e57c` passed again.
+`docs/PRIVATE_ASSET_CONTROL_PLANE.md` and `control-plane/server.py` define:
+- public `/health`
+- bearer-authenticated build status and viewer-session creation
+- read-only temporary `/s/{session_id}/{asset}` capability access
+- allowed assets only: `model.glb`, `build-result.json`, `front.png`, `three-quarter.png`
+- high-entropy server-side sessions
+- default 2h TTL, max 24h
+- private/no-store delivery and viewer-origin CORS
+- no account/database/JWT platform
+- control token never enters viewer URLs.
 
-**P3.2 VPS bootstrap proof:** Bamboo performed a read-only survey first, then fetched and reviewed the exact pinned bootstrap before execution. The successful bootstrap created dedicated runtime user `spatialforge`; `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}` with separated ownership/modes; locally generated non-printed `SF_CONTROL_TOKEN` in `state/control.env` mode `0600`; a localhost-only systemd unit for `127.0.0.1:18792`; and a sudoers drop-in giving existing `eidolon-deploy` only `restart`, `status`, and `is-active` for `ianeo-spatial-forge.service`. No packages, firewall rules, DNS, tunnels, cloudflared changes, or unrelated `/srv/eidolon` changes were made.
+### P3.2 VPS bootstrap proof
 
-**P3.5 runtime proof:** Deploy Control Plane to VPS run `32884206891` succeeded end-to-end after replacing fragile multiline private-key pasting with a single-line Base64 repository secret. The workflow validated the decoded key with `ssh-keygen -y`, verified pinned-host-key SSH as `eidolon-deploy`, deployed `control-plane/server.py` into `/srv/ianeo-spatial-forge/app/control-plane/server.py`, restarted `ianeo-spatial-forge.service` through the narrow sudo rule, and verified `http://127.0.0.1:18792/health` from the VPS. The workflow was then restored to manual-only dispatch. Routine code deployment no longer requires Bamboo/Termux.
+Dedicated runtime user `spatialforge` and `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}` are installed with separated ownership/modes. `SF_CONTROL_TOKEN` is locally generated, non-printed, and stored `0600`. Service binds only `127.0.0.1:18792`. `eidolon-deploy` sudo is restricted to restart/status/is-active for this service. No packages, firewall, DNS, tunnel, cloudflared, or unrelated `/srv/eidolon` changes were made.
 
-**P3.6 remaining bootstrap-only item:** the service is active but was intentionally not enabled during the initial bootstrap. Close P3.6 after one final one-time enable-on-boot verification; after that Bamboo/Termux remain emergency-only.
+Final root verification confirmed:
+- service active/running
+- enabled at boot
+- listening only `127.0.0.1:18792`
+- public IPv4 connection to port `18792` refused
+- `/health` returns 200
+- no journal errors.
 
-**Current P3 order:** perform the one-time enable-on-boot check, then prove P3.3/P3.4 on the real VPS through GitHub Actions. Bamboo/Termux are no longer part of normal deployment.
+### P3.3 runtime proof
+
+`control-plane/server.py` now performs expired-session cleanup at startup and request boundaries. Corrupt/expired session records are removed. Expired capability URLs return 404. `SF_ASSET_ORIGIN` support was added so the public Pages viewer can receive absolute private asset URLs once HTTPS ingress exists.
+
+Control Plane Smoke runs `32885401030` and `32885482676` passed:
+- proactive expired-session removal
+- bearer auth boundary
+- session creation
+- absolute asset-origin viewer URL contract
+- protected GLB GET
+- actual GET response headers (`Access-Control-Allow-Origin`, `Cache-Control`, `Referrer-Policy`, `X-Content-Type-Options`)
+- expired capability 404 + session-file removal.
+
+### P3.5 / P3.6 runtime proof
+
+Initial VPS deploy run `32884206891` passed SSH key validation, pinned host-key SSH, code deployment, service restart, and localhost health verification.
+
+Normal deployment is now smoke-gated:
+`control-plane change → Control Plane Smoke PASS → Deploy Control Plane to VPS workflow_run → SSH deploy → restart → localhost /health`.
+
+Fresh chain proof:
+- smoke run `32885482676` PASS
+- automatically spawned deploy run `32885510216` PASS
+- deploy steps all passed: checkout, decoded-key validation, SSH transport, code deploy, restart, localhost health.
+
+Bamboo/Termux are now bootstrap/emergency-only, not normal deployment dependencies.
+
+### Current P3 target
+
+P3.4 remains open because the service intentionally has no public ingress yet. Next establish one protected HTTPS asset origin (without exposing port `18792` directly), set `SF_ASSET_ORIGIN`, then prove the live `forge.drthorne.uk` viewer can retrieve a temporary protected asset with correct CORS/expiry behavior.
 
 ## P4 — Telegram Delivery + Mini App
 
@@ -97,18 +118,18 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 ## P5 — MCP Control
 
 - [ ] P5.1 Introduce MCP only after build, manifest semantics, control plane, and phone delivery are independently proven.
-- [ ] P5.2 Implement a minimal MCP server over already-proven backend operations.
+- [ ] P5.2 Implement a minimal MCP server over proven backend operations.
 - [ ] P5.3 Expose read/status tools first.
 - [ ] P5.4 Add narrow build/create actions.
-- [ ] P5.5 Add revision action only after version/lock semantics pass.
-- [ ] P5.6 Verify the full external IANEO → MCP → Spatial Forge → Telegram/web viewer loop.
+- [ ] P5.5 Add revision only after version/lock semantics pass.
+- [ ] P5.6 Verify external IANEO → MCP → Spatial Forge → Telegram/web viewer.
 
 ## P6 — Character Canon and Revisions
 
 - [ ] P6.1 Separate temporary builds from approved canonical assets.
 - [ ] P6.2 Persist approved manifests privately.
 - [ ] P6.3 Add reusable pose assets.
-- [ ] P6.4 Add side-by-side version metadata/preview comparison.
+- [ ] P6.4 Add side-by-side version comparison.
 - [ ] P6.5 Prove scoped revisions without unrelated drift.
 
 ## P7 — Spatial Scene Forge
@@ -121,8 +142,8 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P8 — Optional Flutter Client
 
-- [ ] P8.1 Re-evaluate only after web/Mini App usage proves a concrete need.
-- [ ] P8.2 If justified, create a small inspection/download client rather than a second orchestration system.
+- [ ] P8.1 Re-evaluate after web/Mini App usage proves a need.
+- [ ] P8.2 If justified, create a small inspection/download client rather than another orchestration system.
 
 ## Permanent Rules
 
