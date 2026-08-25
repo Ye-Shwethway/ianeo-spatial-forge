@@ -10,11 +10,15 @@ During development and verification:
 
 **Creator → IANEO → built-in repository/connectors + proven automation → Spatial Forge → preview / GLB / scene assets**
 
+Phone inspection is intentionally pulled forward before the full control plane:
+
+**GitHub Actions artifact → lightweight web viewer → Creator's phone**
+
 After the underlying backend, control plane, and phone delivery are independently established:
 
-**External IANEO session → MCP → proven Spatial Forge backend → Telegram / Mini App**
+**External IANEO session → MCP → proven Spatial Forge backend → Telegram / web viewer / Mini App**
 
-Telegram is the notification and delivery surface. A Telegram Mini App is the first interactive 3D inspection surface. A dedicated Flutter client is optional later, only if the Mini App proves insufficient.
+Telegram is the notification and delivery surface. The first interactive 3D inspection surface is a lightweight mobile web viewer that can later run inside a Telegram Mini App without being rewritten. A dedicated Flutter client is optional later, only if the web/Mini App path proves insufficient.
 
 ## Phase P0 — Headless Blender Proof
 
@@ -49,6 +53,29 @@ Success:
 - feature-lock semantics can express changes such as `face-only` without silently modifying approved body settings
 - two generic revisions prove intended change plus lock preservation
 
+## Phase P2V — Phone Viewer Foundation
+
+Goal: give the Creator an immediate phone-first inspection surface before finishing revision semantics or the full VPS control plane.
+
+Architecture:
+
+**mobile browser → static Spatial Forge Viewer → GLB + preview + build-result metadata**
+
+Initial deployment target:
+- static viewer files are versioned in this repository
+- preferred public UI hostname is `forge.drthorne.uk`
+- Cloudflare Pages is the preferred static hosting target once connected
+- the viewer must not require the VPS merely to render a GLB
+- the VPS will later provide protected/private build assets and metadata through the P3 control plane
+
+Success:
+- mobile-first static viewer shell exists
+- viewer can load a GLB URL and rotate/zoom/reset it
+- front and three-quarter evidence can be displayed when URLs are supplied
+- build-result metadata can be displayed without fabricating unsupported precision
+- no database, account system, or large frontend framework is required
+- architecture is compatible with later Telegram Mini App embedding
+
 ## Phase P3 — VPS Control Plane
 
 Goal: use the existing VPS as a lightweight coordinator and temporary private file store, not as a render farm.
@@ -59,17 +86,18 @@ Success:
 - build/result status
 - signed or otherwise protected asset retrieval
 - cleanup/expiry policy
+- the viewer can consume protected build URLs without becoming tightly coupled to the VPS implementation
 
 Bamboo may be used once to bootstrap the VPS foundation. It is not a runtime dependency and should disappear from the normal workflow after automated deployment is established.
 
-## Phase P4 — Telegram Delivery + Mini App Viewer
+## Phase P4 — Telegram Delivery + Mini App
 
-Goal: make the full loop usable from a phone before adding MCP.
+Goal: connect the already-proven web viewer to the phone delivery loop before adding MCP.
 
 Success:
 - Telegram bot sends build completion/status and preview
-- `Open 3D` opens a Mini App viewer
-- viewer loads GLB, supports rotate/zoom, and exposes metadata/download actions
+- `Open 3D` opens the existing viewer as a Telegram Mini App/web view
+- viewer supports rotate/zoom/reset plus metadata/download actions
 - private assets are not exposed as permanent public URLs
 - Android phone end-to-end delivery/inspection works without MCP
 
@@ -118,7 +146,7 @@ Potential capabilities:
 
 ## Phase P8 — Optional Dedicated Flutter Client
 
-Build only if the Telegram Mini App is no longer sufficient. Possible future functions include offline cache, richer asset browsing, side-by-side version comparison, scene inspection, and Simiverse integration.
+Build only if the Telegram/web viewer path is no longer sufficient. Possible future functions include offline cache, richer asset browsing, side-by-side version comparison, scene inspection, and Simiverse integration.
 
 ## Non-Goals for Early Phases
 
@@ -130,6 +158,7 @@ Build only if the Telegram Mini App is no longer sufficient. Possible future fun
 - premature distributed architecture
 - paid AI 3D APIs
 - storing private character canon in this public repository
+- building a heavy SPA or account/database system just to inspect a GLB
 
 ## 3D Creation Intelligence Rule
 
