@@ -68,7 +68,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 ## P3 — VPS Control Plane
 
 - [x] P3.1 Define minimal authenticated HTTP/job interface.
-- [ ] P3.2 Bootstrap service directories and least-privilege service account on VPS.
+- [x] P3.2 Bootstrap service directories and least-privilege service account on VPS.
 - [ ] P3.3 Add temporary job storage with expiry/cleanup.
 - [ ] P3.4 Add build status and protected asset retrieval.
 - [ ] P3.5 Establish GitHub Actions deployment as the normal update path.
@@ -76,13 +76,11 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 **P3.1 contract:** `docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines the public viewer/private VPS split. `control-plane/server.py` implements the first stdlib-only service: public `/health`, bearer-authenticated private build status + viewer-session creation, and temporary read-only `/s/{session_id}/{asset}` delivery limited to GLB, build-result JSON, front PNG, and three-quarter PNG. Session IDs are high entropy; control credentials never enter viewer URLs.
 
-**P3 pre-VPS proof:** Control Plane Smoke run `32880493854` on commit `ee820642393a68f968ee79af85720e424eed71bd` passed Python syntax, health, bearer authorization, temporary session creation, and protected asset retrieval using an isolated runner-local root.
+**P3 pre-VPS proof:** Control Plane Smoke run `32880493854` passed syntax, health, bearer authorization, temporary session creation, and protected asset retrieval in an isolated runner root. After the first VPS bootstrap attempt revealed a non-interactive PATH issue before any mutation, `deploy/bootstrap-vps.sh` was corrected to set `PATH=/usr/sbin:/sbin:/usr/bin:/bin`; verification run `32881012007` on commit `0292d8e286838e4823b681009cac04252cd4e57c` passed again.
 
-**VPS survey:** Ubuntu 24.04.4 LTS x86_64; Python 3.12.3; Node 22.22.1; systemd operational though degraded; `cloudflared` already active for unrelated services; no nginx/Caddy/Apache; `/srv/ianeo-spatial-forge` absent and safe to create; existing deploy user `eidolon-deploy`; dedicated runtime user `spatialforge` absent; `127.0.0.1:18792` selected as the project-local listener. Existing `/srv/eidolon` and unrelated exposed container ports must not be touched.
+**P3.2 VPS bootstrap proof:** Bamboo performed a read-only survey first, then fetched and reviewed the exact pinned bootstrap before execution. The successful bootstrap created dedicated runtime user `spatialforge`; `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}` with separated ownership/modes; locally generated non-printed `SF_CONTROL_TOKEN` in `state/control.env` mode `0600`; a localhost-only systemd unit for `127.0.0.1:18792`; and a sudoers drop-in giving existing `eidolon-deploy` only `restart`, `status`, and `is-active` for `ianeo-spatial-forge.service`. No packages, firewall rules, DNS, tunnels, cloudflared changes, or unrelated `/srv/eidolon` changes were made. The service intentionally remains not started/not enabled until the first Actions deployment places app code.
 
-**P3.2 bootstrap design:** `deploy/bootstrap-vps.sh` creates only the dedicated runtime boundary: `spatialforge` service user, `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}`, a locally generated non-printed `SF_CONTROL_TOKEN`, systemd unit on `127.0.0.1:18792`, and narrowly scoped restart/status sudo rules for `eidolon-deploy`. It does not install packages, start the service, modify existing tunnels, or touch unrelated services.
-
-**VPS operating rule:** Manual/Termux/Bamboo access is permitted only for one-time bootstrap, connection establishment, secret installation, or emergency repair. Once the deployment connection is established, normal updates must flow from GitHub Actions to the VPS.
+**Current P3 order:** establish P3.5 transport next so routine updates immediately move to GitHub Actions. Then prove P3.3/P3.4 on the real VPS through that transport. Bamboo/Termux remain bootstrap/emergency-only.
 
 ## P4 — Telegram Delivery + Mini App
 
