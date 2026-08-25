@@ -1,0 +1,93 @@
+name: Character Manifest Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/character-manifest.yml"
+      - "scripts/build_character.py"
+      - "schemas/character-build.schema.json"
+      - "schemas/build-result.schema.json"
+      - "fixtures/generic-character-v1.json"
+
+permissions:
+  contents: read
+
+jobs:
+  manifest-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BLENDER_VERSION: "4.5.12"
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output/character-manifest"
+      SF_EXPECTED_MPFB_VERSION: "2.0.17"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check public manifest JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool schemas/character-build.schema.json >/dev/null
+          python -m json.tool schemas/build-result.schema.json >/dev/null
+          python -m json.tool fixtures/generic-character-v1.json >/dev/null
+
+      - name: Install headless render runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 \
+            "$BLENDER_URL" \
+            --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Install MPFB extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
+
+      - name: Build character from manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SF_OUTPUT_DIR"
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --python scripts/build_character.py
+
+      - name: Verify outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$SF_OUTPUT_DIR/generic-character-v1.blend"
+          test -s "$SF_OUTPUT_DIR/generic-character-v1.glb"
+          test -s "$SF_OUTPUT_DIR/front.png"
+          test -s "$SF_OUTPUT_DIR/three-quarter.png"
+          test -s "$SF_OUTPUT_DIR/build-result.json"
+          python -m json.tool "$SF_OUTPUT_DIR/build-result.json"
+          ls -lh "$SF_OUTPUT_DIR"
+
+      - name: Upload manifest proof artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-character-manifest
+          path: output/character-manifest/
+          if-no-files-found: error
+          retention-days: 7
