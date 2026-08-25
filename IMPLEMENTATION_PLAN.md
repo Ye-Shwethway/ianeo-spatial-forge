@@ -7,8 +7,8 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] F0.1 Create public repository.
 - [x] F0.2 Add README and architecture/security principles.
 - [x] F0.3 Add roadmap.
-- [ ] F0.4 Add implementation plan, AGENTS.md, bootstrap handoff, and `.gitignore`.
-- [ ] F0.5 Verify repository foundation from `main`.
+- [x] F0.4 Add implementation plan, AGENTS.md, bootstrap handoff, and `.gitignore`.
+- [x] F0.5 Verify repository foundation from `main`.
 
 ## P0 — Headless Blender Proof
 
