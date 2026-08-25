@@ -1,0 +1,49 @@
+name: Viewer Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "viewer/**"
+      - ".github/workflows/viewer-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  viewer-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Serve viewer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd viewer
+          python3 -m http.server 4173 >"$RUNNER_TEMP/viewer-http.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/viewer-http.pid"
+          sleep 1
+
+      - name: Verify viewer shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error http://127.0.0.1:4173/ --output "$RUNNER_TEMP/index.html"
+          curl --fail --silent --show-error http://127.0.0.1:4173/app.js --output "$RUNNER_TEMP/app.js"
+          curl --fail --silent --show-error http://127.0.0.1:4173/styles.css --output "$RUNNER_TEMP/styles.css"
+          grep -F "IANEO Spatial Forge" "$RUNNER_TEMP/index.html"
+          grep -F "model-viewer@4.3.1" "$RUNNER_TEMP/index.html"
+          grep -F "URLSearchParams" "$RUNNER_TEMP/app.js"
+          test -s "$RUNNER_TEMP/styles.css"
+
+      - name: Stop viewer
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$RUNNER_TEMP/viewer-http.pid"; then
+            kill "$(cat "$RUNNER_TEMP/viewer-http.pid")" || true
+          fi
