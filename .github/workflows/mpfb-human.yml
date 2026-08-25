@@ -1,0 +1,78 @@
+name: MPFB Generic Human Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mpfb-human.yml"
+      - "scripts/mpfb_human.py"
+
+permissions:
+  contents: read
+
+jobs:
+  human-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BLENDER_VERSION: "4.5.12"
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install headless render runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 \
+            "$BLENDER_URL" \
+            --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Install and enable MPFB extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
+
+      - name: Run MPFB human build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SF_OUTPUT_DIR"
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --python scripts/mpfb_human.py
+
+      - name: Verify outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$SF_OUTPUT_DIR/generic-human.blend"
+          test -s "$SF_OUTPUT_DIR/generic-human.glb"
+          test -s "$SF_OUTPUT_DIR/front.png"
+          test -s "$SF_OUTPUT_DIR/three-quarter.png"
+          ls -lh "$SF_OUTPUT_DIR"
+
+      - name: Upload human proof artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-mpfb-human
+          path: output/
+          if-no-files-found: error
+          retention-days: 7
