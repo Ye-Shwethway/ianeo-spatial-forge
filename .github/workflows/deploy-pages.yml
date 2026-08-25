@@ -33,3 +33,12 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify Pages URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 6 --retry-delay 5 \
+            https://ianeo-spatial-forge.pages.dev/ | grep -F "IANEO Spatial Forge"
+          curl --fail --silent --show-error --location --retry 6 --retry-delay 5 \
+            https://forge.drthorne.uk/ | grep -F "IANEO Spatial Forge"
