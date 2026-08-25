@@ -1,0 +1,25 @@
+[Unit]
+Description=IANEO Spatial Forge Private Asset Control Plane
+After=network.target
+
+[Service]
+Type=simple
+User=spatialforge
+Group=spatialforge
+WorkingDirectory=/srv/ianeo-spatial-forge/app
+EnvironmentFile=/srv/ianeo-spatial-forge/state/control.env
+Environment=SF_HOST=127.0.0.1
+Environment=SF_PORT=18792
+Environment=SF_ROOT=/srv/ianeo-spatial-forge
+Environment=SF_VIEWER_ORIGIN=https://forge.drthorne.uk
+ExecStart=/usr/bin/python3 /srv/ianeo-spatial-forge/app/control-plane/server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/ianeo-spatial-forge/private /srv/ianeo-spatial-forge/state
+
+[Install]
+WantedBy=multi-user.target
