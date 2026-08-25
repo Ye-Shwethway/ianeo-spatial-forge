@@ -21,7 +21,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Syntax check
-        run: python3 -m py_compile control-plane/server.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile control-plane/server.py
+          bash -n deploy/bootstrap-vps.sh
+          bash -n deploy/install-proof-build.sh
 
       - name: Exercise private session flow
         shell: bash
