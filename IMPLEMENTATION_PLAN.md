@@ -47,83 +47,95 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P3.1 Define minimal authenticated HTTP/job interface.
 - [x] P3.2 Bootstrap service directories and least-privilege service account on VPS.
 - [x] P3.3 Add temporary session storage with expiry/cleanup.
-- [ ] P3.4 Complete protected asset retrieval through a real HTTPS private asset origin.
+- [x] P3.4 Complete protected asset retrieval through a real HTTPS private asset origin.
 - [x] P3.5 Establish GitHub Actions deployment as the normal update path.
 - [x] P3.6 Remove Bamboo/Termux from normal operational workflow.
+- [x] P3.7 Add phone-first web Asset Library with same-origin authenticated API proxy.
 
-### P3.1 contract
+### P3 runtime state
 
-`docs/PRIVATE_ASSET_CONTROL_PLANE.md` and `control-plane/server.py` define:
-- public `/health`
-- bearer-authenticated build status and viewer-session creation
-- read-only temporary `/s/{session_id}/{asset}` capability access
-- allowed assets only: `model.glb`, `build-result.json`, `front.png`, `three-quarter.png`
-- high-entropy server-side sessions
-- default 2h TTL, max 24h
-- private/no-store delivery and viewer-origin CORS
-- no account/database/JWT platform
-- control token never enters viewer URLs.
-
-### P3.2 VPS bootstrap proof
-
-Dedicated runtime user `spatialforge` and `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}` are installed with separated ownership/modes. `SF_CONTROL_TOKEN` is locally generated, non-printed, and stored `0600`. Service binds only `127.0.0.1:18792`. `eidolon-deploy` sudo is restricted to restart/status/is-active for this service. No packages, firewall, DNS, tunnel, cloudflared, or unrelated `/srv/eidolon` changes were made.
-
-Final root verification confirmed:
-- service active/running
-- enabled at boot
-- listening only `127.0.0.1:18792`
-- public IPv4 connection to port `18792` refused
-- `/health` returns 200
-- no journal errors.
-
-### P3.3 runtime proof
-
-`control-plane/server.py` now performs expired-session cleanup at startup and request boundaries. Corrupt/expired session records are removed. Expired capability URLs return 404. `SF_ASSET_ORIGIN` support was added so the public Pages viewer can receive absolute private asset URLs once HTTPS ingress exists.
-
-Control Plane Smoke runs `32885401030` and `32885482676` passed:
-- proactive expired-session removal
-- bearer auth boundary
-- session creation
-- absolute asset-origin viewer URL contract
-- protected GLB GET
-- actual GET response headers (`Access-Control-Allow-Origin`, `Cache-Control`, `Referrer-Policy`, `X-Content-Type-Options`)
-- expired capability 404 + session-file removal.
-
-Credentialed cross-origin support is also proven in CI: viewer asset requests send credentials, and the control plane returns exact-origin CORS plus `Access-Control-Allow-Credentials: true`. Control Plane Smoke `32887785458`, Viewer Smoke `32887798560`, and smoke-gated VPS deploy `32887801307` passed.
+- VPS service is active/enabled and binds only `127.0.0.1:18792`.
+- `assets.drthorne.uk` routes through the existing remotely-managed Cloudflare Tunnel to `http://127.0.0.1:18792`; port `18792` remains non-public.
+- Cloudflare Access protects `forge.drthorne.uk`, Pages fallback/preview hostnames, and `assets.drthorne.uk` with Email OTP, exact-owner-email Allow, deny-by-default behavior, and 30-day session.
+- `SF_ASSET_ORIGIN=https://assets.drthorne.uk` is active in the live service.
+- A real generic Blender/MPFB build was staged and promoted into VPS private storage and retrieved on Android through the protected viewer with model + previews visible.
+- Web control now uses a same-origin Pages Function proxy: browser calls `forge.drthorne.uk/api/*`; the function forwards the authenticated Access assertion server-side to `assets.drthorne.uk`. Browser cross-origin Access login/cookie bouncing is not part of the canonical flow.
+- Android runtime verified `forge.drthorne.uk/api/v1/builds` returning the private build JSON and the Asset Library rendering the `p3-private-proof` build card.
+- Bamboo/Termux/root access are bootstrap/emergency-only.
 
 ### Web Access security runtime proof
 
-The Spatial Forge viewer is protected by Cloudflare Access using Email One-Time PIN only, exact-owner-email Allow policy, deny-by-default behavior, and a 30-day session. Protected hostnames include `forge.drthorne.uk`, `ianeo-spatial-forge.pages.dev`, and `*.ianeo-spatial-forge.pages.dev` so the Pages fallback/preview paths are not intended as anonymous bypasses.
-
-Android runtime screenshots verified the real flow:
+Android runtime verified:
 - unauthenticated `forge.drthorne.uk` reaches the Cloudflare Access login page
-- OTP verification reaches the Spatial Forge viewer
-- the viewer `Log out` action reaches `/cdn-cgi/access/logout`
-- Cloudflare reports successful logout and immediately requires login again.
+- OTP verification reaches Spatial Forge
+- explicit `/cdn-cgi/access/logout` logs out and requires login again
+- Eager redirect cookie is disabled
+- direct anonymous `assets.drthorne.uk` access remains Access-blocked
+- same-origin `/api` proxy works with authenticated Access context.
 
-### P3.4 ingress state
+## P3Q — Character Quality & Visual Fidelity
 
-Cloudflare Tunnel published hostname `assets.drthorne.uk` is now configured on the existing remotely-managed tunnel `fbforbambooclaw`, targeting only `http://127.0.0.1:18792`. `assets.drthorne.uk` is also attached to the existing `IANEO Spatial Forge` Access application with Eager redirect cookie enabled. An unauthenticated `/health` request is Access-gated. No direct VPS port `18792` exposure, firewall opening, or direct-IP route was created.
+**Goal:** move from a structurally valid generic MPFB human to a visually convincing, detailed, attractive character while preserving deterministic builds, mobile-friendly GLB output, and honest support boundaries.
 
-The repo service template now declares `SF_ASSET_ORIGIN=https://assets.drthorne.uk`. P3.4 remains open until the live VPS runtime receives that environment value and a temporary private test build is retrieved end-to-end through the authenticated phone viewer with GLB/JSON/PNG and expiry behavior proven.
+This is the next active phase. Do not jump to Telegram or MCP until the quality ladder is proven on at least one generic character.
 
-### P3.5 / P3.6 runtime proof
+- [ ] P3Q.1 Establish a clean visual baseline.
+  - Build one generic body/face fixture specifically for quality work.
+  - Remove accidental/placeholder-looking assets from the baseline.
+  - Use fixed front, three-quarter, profile, and full-body evidence views.
+  - Record current visible defects instead of redesigning everything at once.
 
-Initial VPS deploy run `32884206891` passed SSH key validation, pinned host-key SSH, code deployment, service restart, and localhost health verification.
+- [ ] P3Q.2 Improve base mesh presentation and surface quality.
+  - smooth shading / normals / seam sanity
+  - verify body topology survives rig + GLB export
+  - choose the smallest subdivision/surface treatment that materially improves appearance without making phone GLBs unnecessarily heavy
+  - compare authored Blender output against fresh-imported GLB.
 
-Normal deployment is now smoke-gated:
-`control-plane change → Control Plane Smoke PASS → Deploy Control Plane to VPS workflow_run → SSH deploy → restart → localhost /health`.
+- [ ] P3Q.3 Expand face-shape control.
+  - identify real MPFB-supported head/face controls before adding schema fields
+  - add a small useful set for head shape, jaw/chin, nose, eyes, brows, mouth/lips where genuinely supported
+  - create a fixed face close-up evidence sheet
+  - prove one scoped face revision without body drift.
 
-Fresh chain proof:
-- smoke run `32885482676` PASS
-- automatically spawned deploy run `32885510216` PASS
-- deploy steps all passed: checkout, decoded-key validation, SSH transport, code deploy, restart, localhost health.
+- [ ] P3Q.4 Add production-quality PBR appearance.
+  - skin material that survives GLB/glTF export
+  - distinct eye materials with believable cornea/iris/sclera appearance where supported
+  - mouth/teeth/tongue materials only if present and export-safe
+  - no Blender-only shader tricks that disappear in the phone viewer
+  - inspect in the real `forge.drthorne.uk` viewer, not Blender alone.
 
-Bamboo/Termux are now bootstrap/emergency-only, not normal deployment dependencies.
+- [ ] P3Q.5 Add hair / brows / facial-hair asset path.
+  - start with one permissively usable generic hairstyle
+  - prove fit, scalp coverage, material, rig/head attachment, and GLB export
+  - add eyebrows/facial hair only through the same asset discipline
+  - avoid heavy hair simulation in this phase.
 
-### Current P3 target
+- [ ] P3Q.6 Add clean clothing asset path.
+  - prove one fitted top + bottom or one simple outfit
+  - verify skinning/deformation with the game-engine rig
+  - eliminate obvious clipping in neutral and one representative pose
+  - keep clothing as replaceable assets rather than hard-wiring one costume into the character generator.
 
-Finish P3.4 with one-time live service environment wiring for `SF_ASSET_ORIGIN=https://assets.drthorne.uk`, then create a private generic test build and prove the authenticated `forge.drthorne.uk` viewer can retrieve temporary protected GLB/JSON/PNG through `assets.drthorne.uk` with correct CORS, credential, and expiry behavior.
+- [ ] P3Q.7 Improve deformation and pose quality.
+  - verify shoulder, elbow, hip, knee, neck, and wrist deformation on representative poses
+  - correct only demonstrated weight/deformation problems
+  - preserve the proven rig/export contract.
+
+- [ ] P3Q.8 Add presentation-grade viewer/render defaults.
+  - neutral flattering lighting/environment
+  - sensible exposure/background/camera framing
+  - face close-up + full-body inspection modes
+  - presentation changes must not hide geometry/material defects.
+
+- [ ] P3Q.9 Final generic quality proof.
+  - build one complete generic quality character from deterministic source
+  - inspect Blender output, GLB structure, fresh import, fixed renders, and Android viewer
+  - record asset/material/tool versions
+  - compare against the P3Q.1 baseline and close only after visible improvement is confirmed.
+
+### P3Q quality rule
+
+Visual quality is a separate gate from structural validity. Mesh counts, joints, successful exports, and green Actions runs do not prove that a character looks good. Every visual-quality slice requires fixed comparable evidence and actual inspection.
 
 ## P4 — Telegram Delivery + Mini App
 
