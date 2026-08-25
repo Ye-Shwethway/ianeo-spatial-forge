@@ -88,7 +88,7 @@ jobs:
           result = json.loads(Path('output/private-proof/fresh-import.json').read_text())
           assert result['mesh_objects'] >= 1
           assert result['armatures'] == 1
-          assert result['bones'] == 53
+          assert result['joint_count'] == 53
           print(json.dumps(result, indent=2))
           PY
 
