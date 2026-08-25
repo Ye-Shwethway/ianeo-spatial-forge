@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlparse
 
 HOST = os.environ.get("SF_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SF_PORT", "18792"))
@@ -94,7 +94,7 @@ def build_summary(build_dir):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SpatialForge/0.3"
+    server_version = "SpatialForge/0.4"
 
     def log_message(self, fmt, *args):
         print(f"{self.client_address[0]} {self.command} {self._safe_path()} {fmt % args}")
@@ -143,6 +143,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+
     def _require_auth(self, browser_cors=False):
         if self._authorized():
             return True
@@ -151,9 +159,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         cleanup_expired_sessions()
-        path = self.path.split("?", 1)[0]
+        parsed_request = urlparse(self.path)
+        path = parsed_request.path
         if path == "/health":
             return self._json(200, {"status": "ok", "service": "ianeo-spatial-forge", "version": VERSION})
+
+        if path == "/browser-connect":
+            if not self._browser_request():
+                return self._json(401, {"error": "unauthorized"})
+            return_to = parse_qs(parsed_request.query).get("return", [VIEWER_ORIGIN + "/"])[0]
+            target = urlparse(return_to)
+            viewer = urlparse(VIEWER_ORIGIN)
+            if target.scheme != viewer.scheme or target.netloc != viewer.netloc:
+                return self._json(400, {"error": "invalid_return"})
+            return self._redirect(return_to)
 
         if path == "/v1/builds":
             if not self._require_auth(browser_cors=True):
