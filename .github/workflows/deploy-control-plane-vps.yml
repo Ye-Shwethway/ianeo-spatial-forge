@@ -1,0 +1,87 @@
+name: Deploy Control Plane to VPS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-forge-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VPS_HOST: ${{ secrets.SPATIALFORGE_VPS_HOST }}
+      VPS_PORT: ${{ secrets.SPATIALFORGE_VPS_PORT }}
+      VPS_USER: ${{ secrets.SPATIALFORGE_VPS_USER }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure pinned SSH identity
+        shell: bash
+        env:
+          VPS_SSH_KEY: ${{ secrets.SPATIALFORGE_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.SPATIALFORGE_VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_PORT"
+          test -n "$VPS_USER"
+          test -n "$VPS_SSH_KEY"
+          test -n "$VPS_KNOWN_HOSTS"
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+      - name: Verify SSH transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'test "$(whoami)" = "eidolon-deploy" && test -d /srv/ianeo-spatial-forge/app'
+
+      - name: Deploy control plane code
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -cf - control-plane | \
+            ssh -p "$VPS_PORT" \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              "$VPS_USER@$VPS_HOST" \
+              'set -e; cd /srv/ianeo-spatial-forge/app; rm -rf control-plane; tar -xf -; test -s control-plane/server.py'
+
+      - name: Restart service
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'sudo /usr/bin/systemctl restart ianeo-spatial-forge.service && sudo /usr/bin/systemctl is-active ianeo-spatial-forge.service'
+
+      - name: Verify localhost health
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'set -e; for i in 1 2 3 4 5 6 7 8 9 10; do if curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"'; then exit 0; fi; sleep 1; done; sudo /usr/bin/systemctl status ianeo-spatial-forge.service --no-pager; exit 1'
