@@ -71,7 +71,6 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "SpatialForge/0.2"
 
     def log_message(self, fmt, *args):
-        # Never log Authorization headers or opaque session IDs from paths.
         print(f"{self.client_address[0]} {self.command} {self._safe_path()} {fmt % args}")
 
     def _safe_path(self):
@@ -210,6 +209,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Access-Control-Allow-Origin", VIEWER_ORIGIN)
+        self.send_header("Access-Control-Allow-Credentials", "true")
         self.end_headers()
         with source.open("rb") as handle:
             while chunk := handle.read(1024 * 1024):
