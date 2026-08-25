@@ -19,7 +19,7 @@ Target direction:
 - Private character canon and private generated assets must never be committed.
 - Blender runs headlessly in Actions.
 - P0 proved Blender `4.5.12 LTS` can generate `.blend`, `.glb`, and a preview on `ubuntu-latest` after installing `libegl1`.
-- MPFB is the initial open-source human-generation engine for P1.
+- P1 proved MPFB `2.0.17` can be installed non-interactively, generate a generic human from script, apply macro phenotype parameters, attach the built-in `game_engine` rig, export GLB, and render previews headlessly.
 - VPS will later be a lightweight control plane and temporary private asset store, not the heavy rendering machine.
 - Telegram bot will be the notification/delivery layer.
 - Telegram Mini App is the first planned interactive 3D viewer.
@@ -31,7 +31,7 @@ Target direction:
 
 Never commit credentials, `.env` files, API keys, SSH keys, Telegram tokens, VPS passwords/config secrets, private character manifests, private meshes/textures/renders, or persistent user data.
 
-P1 remains a **zero-secret** phase using a generic non-canonical human only.
+P2 still uses generic non-canonical manifests only.
 
 ## Proven Runtime State
 
@@ -48,23 +48,36 @@ Inspected artifact contents:
 
 The preview was visually inspected and matched the expected cube/ground scene. The first attempt exposed one missing runtime library (`libEGL.so.1`); installing Ubuntu package `libegl1` resolved it.
 
+### P1 — PASS
+
+Successful rigged workflow run: `32860562804`
+Commit: `691939711d29e552d8920a48b6df8b7e091f7c84`
+Blender: `4.5.12 LTS`
+MPFB: `2.0.17`
+
+Inspected artifact contents:
+- `generic-human.blend` — 8,438,771 bytes
+- `generic-human.glb` — 8,689,428 bytes
+- `front.png` — 355,928 bytes
+- `three-quarter.png` — 357,028 bytes
+
+Both previews were visually inspected and showed the expected generic human. Direct inspection of the GLB JSON chunk found 1 mesh, 1 skin, and 53 joints, confirming that the built-in `game_engine` rig survived export. The first P1 attempt failed because Blender extension online access was disabled; adding `--online-mode` to the extension-install command fixed it.
+
 ## Current Slice
 
-### P1 — Human Generation Proof
+### P2 — Minimal Character Manifest
 
-Use MPFB with the smallest reliable headless path. Current preferred MPFB release is `2.0.17`, compatible with Blender 4.2 LTS and newer. Start with a generic human only.
+Keep this intentionally compact. The manifest must describe only controls the engine can truthfully support.
 
 Target sequence:
-1. install/enable MPFB non-interactively in the Actions runner
-2. prove the scripting API loads in background Blender
-3. create one generic human basemesh
-4. apply a small phenotype set such as gender/age/muscle/weight/height
-5. export GLB
-6. render front and three-quarter lightweight previews
-7. inspect actual artifacts
-8. add a built-in rig only after the unrigged human path is reliable
+1. define one small versioned character-build JSON schema
+2. define one small build-result metadata schema
+3. map supported macro fields to MPFB controls
+4. report unsupported requested precision explicitly rather than fabricating it
+5. add version id plus narrow lock/revision semantics
+6. build two generic manifest revisions and prove that the intended field changes while locked fields remain stable
 
-Do not add VPS, Telegram, MCP, canonical characters, or private data until the P1 gate passes.
+Do not introduce a broad RPG/stat schema, database layer, VPS service, Telegram transport, or MCP in P2.
 
 ## Verification Method
 
