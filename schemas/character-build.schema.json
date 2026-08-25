@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://drthorne.uk/schemas/ianeo-spatial-forge/character-build.schema.json",
+  "$id": "urn:ianeo-spatial-forge:schema:character-build:1.0",
   "title": "IANEO Spatial Forge Character Build Manifest",
   "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements.",
   "type": "object",
