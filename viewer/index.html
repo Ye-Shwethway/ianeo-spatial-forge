@@ -24,6 +24,7 @@
     <section class="card viewer-card">
       <model-viewer
         id="model"
+        with-credentials
         camera-controls
         touch-action="pan-y"
         shadow-intensity="0.8"
@@ -43,11 +44,11 @@
       <h2>Visual evidence</h2>
       <div class="preview-grid">
         <figure id="frontFigure" class="hidden">
-          <img id="frontPreview" alt="Front preview">
+          <img id="frontPreview" crossorigin="use-credentials" alt="Front preview">
           <figcaption>Front</figcaption>
         </figure>
         <figure id="threeQuarterFigure" class="hidden">
-          <img id="threeQuarterPreview" alt="Three-quarter preview">
+          <img id="threeQuarterPreview" crossorigin="use-credentials" alt="Three-quarter preview">
           <figcaption>Three-quarter</figcaption>
         </figure>
       </div>
