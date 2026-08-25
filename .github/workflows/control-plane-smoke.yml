@@ -28,14 +28,14 @@ jobs:
           bash -n deploy/bootstrap-vps.sh
           bash -n deploy/install-proof-build.sh
 
-      - name: Exercise private session flow
+      - name: Exercise private session and browser library flow
         shell: bash
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/spatial-forge"
           mkdir -p "$ROOT/private/builds/test-build" "$ROOT/private/sessions" "$ROOT/state"
           printf 'fake-glb' > "$ROOT/private/builds/test-build/model.glb"
-          printf '{"character_id":"generic-private-test","status":"success"}\n' > "$ROOT/private/builds/test-build/build-result.json"
+          printf '{"character_id":"generic-private-test","version":1,"status":"success"}\n' > "$ROOT/private/builds/test-build/build-result.json"
           printf 'png' > "$ROOT/private/builds/test-build/front.png"
           printf 'png' > "$ROOT/private/builds/test-build/three-quarter.png"
           printf '{"build_id":"test-build","expires_at":1}\n' > "$ROOT/private/sessions/expired.json"
@@ -57,7 +57,8 @@ jobs:
           grep -q 'ianeo-spatial-forge' /tmp/health.json
           test ! -e "$ROOT/private/sessions/expired.json"
 
-          test "$(curl -sS -o /tmp/unauth -w '%{http_code}' http://127.0.0.1:18792/v1/builds/test-build)" = "401"
+          test "$(curl -sS -o /tmp/unauth -w '%{http_code}' http://127.0.0.1:18792/v1/builds)" = "401"
+          test "$(curl -sS -o /tmp/unauth-detail -w '%{http_code}' http://127.0.0.1:18792/v1/builds/test-build)" = "401"
 
           curl -fsS \
             -H 'Authorization: Bearer test-control-token' \
@@ -96,8 +97,35 @@ jobs:
           grep -qi '^Referrer-Policy: no-referrer' /tmp/headers.txt
           grep -qi '^X-Content-Type-Options: nosniff' /tmp/headers.txt
 
+          ACCESS_HEADERS=(
+            -H 'Origin: https://forge.drthorne.uk'
+            -H 'Cf-Access-Jwt-Assertion: test-access-jwt'
+            -H 'Cf-Access-Authenticated-User-Email: owner@example.test'
+          )
+
+          curl -fsS -D /tmp/library-headers.txt "${ACCESS_HEADERS[@]}" \
+            http://127.0.0.1:18792/v1/builds > /tmp/builds.json
+          grep -q 'test-build' /tmp/builds.json
+          grep -q 'generic-private-test' /tmp/builds.json
+          grep -qi '^Access-Control-Allow-Origin: https://forge.drthorne.uk' /tmp/library-headers.txt
+          grep -qi '^Access-Control-Allow-Credentials: true' /tmp/library-headers.txt
+
+          curl -fsS "${ACCESS_HEADERS[@]}" -X POST \
+            http://127.0.0.1:18792/v1/builds/test-build/viewer-session > /tmp/browser-session.json
+          grep -q 'forge.drthorne.uk' /tmp/browser-session.json
+          grep -q 'assets.example.test' /tmp/browser-session.json
+
+          curl -fsS "${ACCESS_HEADERS[@]}" -X POST \
+            http://127.0.0.1:18792/v1/builds/test-build/delete > /tmp/delete.json
+          grep -q '"deleted":true' /tmp/delete.json
+          test ! -e "$ROOT/private/builds/test-build"
+          test "$(curl -sS -o /tmp/deleted-asset -w '%{http_code}' "http://127.0.0.1:18792${MODEL_PATH}")" = "404"
+
           EXPIRED_ID='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-          printf '{"build_id":"test-build","expires_at":1}\n' > "$ROOT/private/sessions/${EXPIRED_ID}.json"
+          mkdir -p "$ROOT/private/builds/expiry-build"
+          printf 'fake-glb' > "$ROOT/private/builds/expiry-build/model.glb"
+          printf '{"character_id":"expiry-test","status":"success"}\n' > "$ROOT/private/builds/expiry-build/build-result.json"
+          printf '{"build_id":"expiry-build","expires_at":1}\n' > "$ROOT/private/sessions/${EXPIRED_ID}.json"
           test "$(curl -sS -o /tmp/expired -w '%{http_code}' "http://127.0.0.1:18792/s/${EXPIRED_ID}/model.glb")" = "404"
           test ! -e "$ROOT/private/sessions/${EXPIRED_ID}.json"
 
