@@ -37,7 +37,10 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:4173/styles.css --output "$RUNNER_TEMP/styles.css"
           grep -F "IANEO Spatial Forge" "$RUNNER_TEMP/index.html"
           grep -F "model-viewer@4.3.1" "$RUNNER_TEMP/index.html"
+          grep -F 'with-credentials' "$RUNNER_TEMP/index.html"
+          grep -F 'crossorigin="use-credentials"' "$RUNNER_TEMP/index.html"
           grep -F 'href="/cdn-cgi/access/logout"' "$RUNNER_TEMP/index.html"
+          grep -F "credentials: 'include'" "$RUNNER_TEMP/app.js"
           grep -F "URLSearchParams" "$RUNNER_TEMP/app.js"
           test -s "$RUNNER_TEMP/styles.css"
 
