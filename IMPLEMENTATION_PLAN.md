@@ -41,12 +41,15 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P2 — Minimal Character Manifest
 
+- [x] P2.0 Research current agent-oriented Blender creation patterns and add a project-specific `spatial-forge-3d` skill covering reproducible creation, truthful precision, scoped revisions, structural + visual validation, export/fresh-import checks, version-aware reference policy, and late-stage-only MCP policy.
 - [ ] P2.1 Define compact JSON schema for character build input.
 - [ ] P2.2 Define build-result metadata schema.
 - [ ] P2.3 Map supported manifest fields to engine controls.
 - [ ] P2.4 Add explicit unsupported-field reporting; never silently fake precision.
 - [ ] P2.5 Add version identifier and scoped revision/lock semantics.
 - [ ] P2.6 Build two versions of a generic test character and verify scoped changes.
+
+**P2 workflow intelligence:** `skills/spatial-forge-3d/SKILL.md` is now the routing layer for Blender/MPFB/3D work. Its references define the smallest-build contract, deterministic manifest/Python source rule, fixed visual evidence, structural-vs-visual gates, GLB fresh-import validation when relevant, and Blender/MPFB reference hierarchy. The proven baseline remains Blender `4.5.12 LTS` + MPFB `2.0.17`; external skills are methodology references, not runtime dependencies.
 
 ## P3 — VPS Control Plane
 
@@ -70,11 +73,14 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P5 — MCP Control
 
-- [ ] P5.1 Implement minimal MCP server over proven backend operations.
-- [ ] P5.2 Expose read/status tools first.
-- [ ] P5.3 Add narrow build/create actions.
-- [ ] P5.4 Add revision action only after version/lock semantics pass.
-- [ ] P5.5 Verify Creator → IANEO → MCP → build → Telegram/Mini App loop.
+- [ ] P5.1 Introduce MCP only after the build pipeline, manifest semantics, control plane, and phone delivery are independently proven without MCP.
+- [ ] P5.2 Implement a minimal MCP server over already-proven backend operations.
+- [ ] P5.3 Expose read/status tools first.
+- [ ] P5.4 Add narrow build/create actions.
+- [ ] P5.5 Add revision action only after version/lock semantics pass.
+- [ ] P5.6 Verify Creator → external IANEO session → MCP → proven Spatial Forge backend → Telegram/Mini App loop.
+
+**MCP boundary:** During implementation and verification, preserve access to built-in repository/connectors. MCP is a late external control adapter, not a core implementation dependency, and must not dictate schemas, file formats, generation scripts, or validation semantics.
 
 ## P6 — Character Canon and Revisions
 
@@ -103,7 +109,8 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - Never rely on repository secrecy; this repository is intentionally public.
 - Never introduce a paid dependency without explicit Creator approval.
 - Keep production path simple; avoid broad test matrices and speculative guards.
+- Read `skills/spatial-forge-3d/SKILL.md` for Blender/MPFB/3D creation or validation work.
 - Do not claim a slice passed until its actual runtime output has been inspected.
-- For Actions-backed slices, verify in this order when available: workflow run → jobs/steps → failed job logs → artifact list → downloaded artifact contents → visual output inspection.
+- For Actions-backed slices, verify in this order when available: workflow run → jobs/steps → failed job logs → artifact list → downloaded artifact contents → fresh-import validation when relevant → visual output inspection.
 - Issues are for durable project discussion/tracking, not a required mechanism for checking workflow state.
 - Update docs after every completed slice before moving on.
