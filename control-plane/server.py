@@ -16,7 +16,8 @@ BUILDS = ROOT / "private" / "builds"
 SESSIONS = ROOT / "private" / "sessions"
 CONTROL_TOKEN = os.environ.get("SF_CONTROL_TOKEN", "")
 VERSION = os.environ.get("SF_VERSION", "dev")
-VIEWER_ORIGIN = os.environ.get("SF_VIEWER_ORIGIN", "https://forge.drthorne.uk")
+VIEWER_ORIGIN = os.environ.get("SF_VIEWER_ORIGIN", "https://forge.drthorne.uk").rstrip("/")
+ASSET_ORIGIN = os.environ.get("SF_ASSET_ORIGIN", "").rstrip("/")
 DEFAULT_TTL = 7200
 MAX_TTL = 86400
 ALLOWED_ASSETS = {
@@ -42,8 +43,32 @@ def write_json_atomic(path, data):
     tmp.replace(path)
 
 
+def cleanup_expired_sessions(now=None):
+    now = int(time.time()) if now is None else int(now)
+    removed = 0
+    if not SESSIONS.is_dir():
+        return removed
+    for session_path in SESSIONS.glob("*.json"):
+        try:
+            session = read_json(session_path)
+            expired = int(session.get("expires_at", 0)) <= now
+        except Exception:
+            expired = True
+        if expired:
+            try:
+                session_path.unlink()
+                removed += 1
+            except FileNotFoundError:
+                pass
+    return removed
+
+
+def asset_url(path):
+    return f"{ASSET_ORIGIN}{path}" if ASSET_ORIGIN else path
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SpatialForge/0.1"
+    server_version = "SpatialForge/0.2"
 
     def log_message(self, fmt, *args):
         # Never log Authorization headers or opaque session IDs from paths.
@@ -61,6 +86,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Content-Type-Options", "nosniff")
         if extra_headers:
             for key, value in extra_headers.items():
@@ -71,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
     def _authorized(self):
         if not CONTROL_TOKEN:
             return False
-        return self.headers.get("Authorization", "") == f"Bearer {CONTROL_TOKEN}"
+        return secrets.compare_digest(self.headers.get("Authorization", ""), f"Bearer {CONTROL_TOKEN}")
 
     def _require_auth(self):
         if self._authorized():
@@ -80,6 +106,7 @@ class Handler(BaseHTTPRequestHandler):
         return False
 
     def do_GET(self):
+        cleanup_expired_sessions()
         path = self.path.split("?", 1)[0]
         if path == "/health":
             return self._json(200, {"status": "ok", "service": "ianeo-spatial-forge", "version": VERSION})
@@ -102,6 +129,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not_found"})
 
     def do_POST(self):
+        cleanup_expired_sessions()
         path = self.path.split("?", 1)[0]
         prefix = "/v1/builds/"
         suffix = "/viewer-session"
@@ -137,10 +165,10 @@ class Handler(BaseHTTPRequestHandler):
 
         base = f"/s/{session_id}"
         viewer_url = (
-            f"{VIEWER_ORIGIN}/?model={quote(base + '/model.glb', safe='/')}"
-            f"&meta={quote(base + '/build-result.json', safe='/')}"
-            f"&front={quote(base + '/front.png', safe='/')}"
-            f"&threeQuarter={quote(base + '/three-quarter.png', safe='/')}"
+            f"{VIEWER_ORIGIN}/?model={quote(asset_url(base + '/model.glb'), safe='/:')}"
+            f"&meta={quote(asset_url(base + '/build-result.json'), safe='/:')}"
+            f"&front={quote(asset_url(base + '/front.png'), safe='/:')}"
+            f"&threeQuarter={quote(asset_url(base + '/three-quarter.png'), safe='/:')}"
             f"&title={quote(build_id)}"
         )
         self._json(201, {"expires_at": utc_iso(expires_at), "viewer_url": viewer_url})
@@ -165,7 +193,10 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return self._json(404, {"error": "not_found"})
 
-        source = BUILDS / session.get("build_id", "") / ALLOWED_ASSETS[asset]
+        build_id = session.get("build_id", "")
+        if not isinstance(build_id, str) or not build_id or "/" in build_id or build_id.startswith("."):
+            return self._json(404, {"error": "not_found"})
+        source = BUILDS / build_id / ALLOWED_ASSETS[asset]
         if not source.is_file():
             return self._json(404, {"error": "not_found"})
 
@@ -190,6 +221,7 @@ def main():
         raise SystemExit("SF_CONTROL_TOKEN is required")
     BUILDS.mkdir(parents=True, exist_ok=True)
     SESSIONS.mkdir(parents=True, exist_ok=True)
+    cleanup_expired_sessions()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"IANEO Spatial Forge control plane listening on {HOST}:{PORT}")
     server.serve_forever()
