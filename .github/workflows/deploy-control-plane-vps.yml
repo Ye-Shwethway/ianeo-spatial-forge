@@ -2,6 +2,10 @@ name: Deploy Control Plane to VPS
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-control-plane-vps.yml"
 
 permissions:
   contents: read
