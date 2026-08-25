@@ -14,11 +14,15 @@ Phone inspection is intentionally pulled forward before the full control plane:
 
 **GitHub Actions artifact → lightweight web viewer → Creator's phone**
 
-After the underlying backend, control plane, and phone delivery are independently established:
+The current web path is now:
+
+**Creator → Cloudflare Access → `forge.drthorne.uk` → same-origin `/api` proxy → protected VPS assets/control**
+
+After character quality, backend, control plane, and phone delivery are independently established:
 
 **External IANEO session → MCP → proven Spatial Forge backend → Telegram / web viewer / Mini App**
 
-Telegram is the notification and delivery surface. The first interactive 3D inspection surface is a lightweight mobile web viewer that can later run inside a Telegram Mini App without being rewritten. A dedicated Flutter client is optional later, only if the web/Mini App path proves insufficient.
+Telegram remains a later notification/delivery surface. The web viewer is the primary current inspection/control surface. A dedicated Flutter client remains optional later.
 
 ## Phase P0 — Headless Blender Proof
 
@@ -50,45 +54,66 @@ Success:
 - supported body/face parameters map predictably to real generation controls
 - unsupported or approximate precision is reported explicitly
 - build metadata records engine/tool versions and outputs
-- feature-lock semantics can express changes such as `face-only` without silently modifying approved body settings
-- two generic revisions prove intended change plus lock preservation
+- feature-lock semantics can express scoped revisions
+- two generic revisions prove intended change plus lock preservation.
 
 ## Phase P2V — Phone Viewer Foundation
 
-Goal: give the Creator an immediate phone-first inspection surface before finishing revision semantics or the full VPS control plane.
+Goal: give the Creator an immediate phone-first inspection surface.
 
 Architecture:
 
-**mobile browser → static Spatial Forge Viewer → GLB + preview + build-result metadata**
-
-Initial deployment target:
-- static viewer files are versioned in this repository
-- preferred public UI hostname is `forge.drthorne.uk`
-- Cloudflare Pages is the preferred static hosting target once connected
-- the viewer must not require the VPS merely to render a GLB
-- the VPS will later provide protected/private build assets and metadata through the P3 control plane
+**mobile browser → Spatial Forge Viewer → protected GLB + previews + build-result metadata**
 
 Success:
-- mobile-first static viewer shell exists
-- viewer can load a GLB URL and rotate/zoom/reset it
-- front and three-quarter evidence can be displayed when URLs are supplied
+- mobile-first viewer shell exists
+- viewer can load a GLB and rotate/zoom/reset it
+- front and three-quarter evidence can be displayed
 - build-result metadata can be displayed without fabricating unsupported precision
-- no database, account system, or large frontend framework is required
-- architecture is compatible with later Telegram Mini App embedding
+- no heavy frontend framework is required
+- architecture remains compatible with later Telegram Mini App embedding.
 
 ## Phase P3 — VPS Control Plane
 
-Goal: use the existing VPS as a lightweight coordinator and temporary private file store, not as a render farm.
+Goal: use the existing VPS as a lightweight coordinator and private file store, not as a render farm.
 
 Success:
-- authenticated job submission
-- temporary job directories
-- build/result status
-- signed or otherwise protected asset retrieval
-- cleanup/expiry policy
-- the viewer can consume protected build URLs without becoming tightly coupled to the VPS implementation
+- authenticated control surface
+- temporary session URLs with expiry/cleanup
+- protected HTTPS asset retrieval through Cloudflare Tunnel
+- localhost-only VPS app
+- GitHub Actions as normal deployment path
+- Bamboo/Termux removed from normal operation
+- Cloudflare Access protects viewer and asset hostnames
+- same-origin Pages Function proxy lets the authenticated web app list/manage protected builds without cross-origin browser-auth redirects
+- Android runtime proves protected private build retrieval and web Asset Library listing.
 
-Bamboo may be used once to bootstrap the VPS foundation. It is not a runtime dependency and should disappear from the normal workflow after automated deployment is established.
+## Phase P3Q — Character Quality & Visual Fidelity
+
+Goal: turn the structurally valid generic MPFB human into a visually convincing, detailed, attractive character while preserving reproducibility, truthful controls, rig/export safety, and phone-friendly GLB delivery.
+
+This is the next active phase before Telegram or MCP.
+
+Quality ladder:
+1. establish a clean baseline and fixed visual evidence views
+2. improve mesh presentation, smoothing/normals and mobile-appropriate surface quality
+3. expand only genuinely supported face controls and prove scoped face revision
+4. add GLB-safe PBR skin/eye/mouth materials
+5. add a disciplined hair/brow/facial-hair asset path
+6. add a clean replaceable clothing asset path with skinning/clipping checks
+7. improve demonstrated rig deformation problems only
+8. improve neutral viewer/render lighting, framing and inspection modes
+9. produce one deterministic complete generic quality character and compare it against the baseline on Android.
+
+Success is visual as well as structural. A green workflow, mesh count, or valid rig does not prove beauty or believable appearance; fixed comparable previews and actual inspection are required.
+
+Early P3Q is intentionally not:
+- high-end sculpting from scratch
+- a render farm
+- heavy cloth/hair simulation
+- huge texture libraries
+- paid AI 3D services
+- premature LOD/asset-management frameworks.
 
 ## Phase P4 — Telegram Delivery + Mini App
 
@@ -99,7 +124,7 @@ Success:
 - `Open 3D` opens the existing viewer as a Telegram Mini App/web view
 - viewer supports rotate/zoom/reset plus metadata/download actions
 - private assets are not exposed as permanent public URLs
-- Android phone end-to-end delivery/inspection works without MCP
+- Android phone end-to-end delivery/inspection works without MCP.
 
 ## Phase P5 — MCP External Control
 
@@ -108,18 +133,10 @@ Goal: expose already-proven Spatial Forge backend operations to an external IANE
 Entry gate:
 - P2 manifest/revision semantics proven
 - P3 control plane proven
-- P4 phone delivery proven independently of MCP
-- development/verification does not need to sacrifice built-in connector access
+- P3Q generic character quality path proven
+- P4 phone delivery proven independently of MCP.
 
-Initial tool family may include:
-- `create_character`
-- `get_character`
-- `build_character`
-- `get_build`
-- `list_assets`
-- `request_revision`
-
-Start with read/status operations, then add narrow build/create operations. Do not create a large tool surface before the underlying operations are proven. MCP must not determine core schemas, file formats, generation scripts, or validation semantics.
+Start with read/status operations, then add narrow build/create operations. MCP must not determine core schemas, file formats, generation scripts, or validation semantics.
 
 ## Phase P6 — Revision and Canon Workflow
 
@@ -130,7 +147,7 @@ Success:
 - approved parameter locks
 - scoped revisions
 - reusable poses
-- canonical vs temporary asset distinction
+- canonical vs temporary asset distinction.
 
 ## Phase P7 — Spatial Scene Forge
 
@@ -142,7 +159,7 @@ Potential capabilities:
 - camera/lens control
 - lighting presets
 - pose libraries
-- composition reference renders for downstream image generation
+- composition reference renders for downstream image generation.
 
 ## Phase P8 — Optional Dedicated Flutter Client
 
@@ -158,7 +175,7 @@ Build only if the Telegram/web viewer path is no longer sufficient. Possible fut
 - premature distributed architecture
 - paid AI 3D APIs
 - storing private character canon in this public repository
-- building a heavy SPA or account/database system just to inspect a GLB
+- building a heavy SPA or account/database system just to inspect a GLB.
 
 ## 3D Creation Intelligence Rule
 
