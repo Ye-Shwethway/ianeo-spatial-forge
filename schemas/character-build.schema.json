@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://drthorne.uk/schemas/ianeo-spatial-forge/character-build.schema.json",
+  "title": "IANEO Spatial Forge Character Build Manifest",
+  "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "character_id",
+    "version",
+    "generator",
+    "phenotype"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "character_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:[a-z0-9._-]*[a-z0-9])?$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine"],
+      "properties": {
+        "engine": {
+          "type": "string",
+          "const": "mpfb"
+        }
+      }
+    },
+    "phenotype": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gender",
+        "age",
+        "muscle",
+        "weight",
+        "height",
+        "proportions"
+      ],
+      "properties": {
+        "gender": {
+          "$ref": "#/$defs/macroControl"
+        },
+        "age": {
+          "$ref": "#/$defs/macroControl"
+        },
+        "muscle": {
+          "$ref": "#/$defs/macroControl"
+        },
+        "weight": {
+          "$ref": "#/$defs/macroControl"
+        },
+        "height": {
+          "$ref": "#/$defs/macroControl"
+        },
+        "proportions": {
+          "$ref": "#/$defs/macroControl"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "macroControl": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Normalized MPFB macro control. This value does not claim exact physical measurement semantics."
+    }
+  }
+}
