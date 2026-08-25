@@ -11,6 +11,7 @@ on:
       - "schemas/character-build.schema.json"
       - "schemas/build-result.schema.json"
       - "fixtures/generic-character-v1.json"
+      - "fixtures/generic-character-unsupported-v1.json"
 
 permissions:
   contents: read
@@ -23,10 +24,10 @@ jobs:
       BLENDER_VERSION: "4.5.12"
       BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
       BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
-      SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
+      SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-unsupported-v1.json"
       SF_OUTPUT_DIR: "${{ github.workspace }}/output/character-manifest"
       SF_EXPECTED_MPFB_VERSION: "2.0.17"
-      SF_GLB_PATH: "${{ github.workspace }}/output/character-manifest/generic-character-v1.glb"
+      SF_GLB_PATH: "${{ github.workspace }}/output/character-manifest/generic-unsupported-v1.glb"
       SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/character-manifest/fresh-import.json"
 
     steps:
@@ -40,6 +41,7 @@ jobs:
           python -m json.tool schemas/character-build.schema.json >/dev/null
           python -m json.tool schemas/build-result.schema.json >/dev/null
           python -m json.tool fixtures/generic-character-v1.json >/dev/null
+          python -m json.tool fixtures/generic-character-unsupported-v1.json >/dev/null
 
       - name: Install headless render runtime
         shell: bash
@@ -83,17 +85,38 @@ jobs:
             --background \
             --python scripts/validate_glb.py
 
-      - name: Verify outputs
+      - name: Verify unsupported request reporting
         shell: bash
         run: |
           set -euo pipefail
-          test -s "$SF_OUTPUT_DIR/generic-character-v1.blend"
-          test -s "$SF_OUTPUT_DIR/generic-character-v1.glb"
+          test -s "$SF_OUTPUT_DIR/generic-unsupported-v1.blend"
+          test -s "$SF_OUTPUT_DIR/generic-unsupported-v1.glb"
           test -s "$SF_OUTPUT_DIR/front.png"
           test -s "$SF_OUTPUT_DIR/three-quarter.png"
           test -s "$SF_OUTPUT_DIR/build-result.json"
           test -s "$SF_OUTPUT_DIR/fresh-import.json"
-          python -m json.tool "$SF_OUTPUT_DIR/build-result.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("output/character-manifest/build-result.json").read_text())
+          expected_controls = {
+              "gender": 1.0,
+              "age": 0.36,
+              "muscle": 0.72,
+              "weight": 0.48,
+              "height": 0.62,
+              "proportions": 0.58,
+          }
+          assert result["applied_controls"] == expected_controls
+          assert result["unsupported_fields"] == [{
+              "field": "chest_circumference",
+              "requested_value": 110.0,
+              "unit": "cm",
+              "reason": "MPFB 2.0.17 has no proven direct control that guarantees this exact real-world measurement; the request is preserved as intent and was not applied as an engine control.",
+          }]
+          assert "chest_circumference" not in result["applied_controls"]
+          print(json.dumps(result["unsupported_fields"], indent=2))
+          PY
           python -m json.tool "$SF_OUTPUT_DIR/fresh-import.json"
           ls -lh "$SF_OUTPUT_DIR"
 
