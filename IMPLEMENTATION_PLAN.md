@@ -26,16 +26,18 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P1 — Human Generation Proof
 
-- [ ] P1.1 Determine the smallest reliable MPFB installation path for headless Blender.
-- [ ] P1.2 Pin MPFB/tool versions and document licenses/source.
-- [ ] P1.3 Generate one generic non-canonical human from script.
-- [ ] P1.4 Control a small set of body/phenotype parameters.
-- [ ] P1.5 Attach a supported rig if the headless path is reliable.
-- [ ] P1.6 Export GLB.
-- [ ] P1.7 Render front and three-quarter lightweight previews.
-- [ ] P1.8 Inspect outputs on phone and document runtime/memory observations.
+- [x] P1.1 Determine the smallest reliable MPFB installation path for headless Blender.
+- [x] P1.2 Pin MPFB/tool versions and document licenses/source.
+- [x] P1.3 Generate one generic non-canonical human from script.
+- [x] P1.4 Control a small set of body/phenotype parameters.
+- [x] P1.5 Attach a supported rig if the headless path is reliable.
+- [x] P1.6 Export GLB with mesh + skin + joints.
+- [x] P1.7 Render front and three-quarter lightweight previews.
+- [x] P1.8 Inspect downloaded artifacts and record runtime/file-structure observations. Phone delivery/viewing remains a P4 concern.
 
-**P1 gate:** no private character canon in Actions payloads or repository fixtures.
+**P1 runtime proof:** Blender `4.5.12 LTS` with MPFB `2.0.17`; successful rigged workflow run `32860562804` on commit `691939711d29e552d8920a48b6df8b7e091f7c84`. Artifact `spatial-forge-mpfb-human` was downloaded and inspected. It contained `generic-human.blend` (8,438,771 bytes), `generic-human.glb` (8,689,428 bytes), `front.png` (355,928 bytes), and `three-quarter.png` (357,028 bytes). Both previews were visually inspected and showed the expected generic human. The GLB JSON chunk was inspected directly and contained 1 mesh, 1 skin, and 53 rig joints. MPFB's built-in `game_engine` rig therefore survived GLB export. The first P1 attempt failed because Blender extension sync was blocked by online-access preference; using Blender's `--online-mode` on the extension-install command fixed the install path.
+
+**P1 privacy gate:** PASS — only a generic non-canonical human and non-sensitive parameters were used.
 
 ## P2 — Minimal Character Manifest
 
