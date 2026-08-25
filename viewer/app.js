@@ -1,5 +1,6 @@
 const params = new URLSearchParams(window.location.search);
 const API_ORIGIN = 'https://assets.drthorne.uk';
+const API_CONNECTED_KEY = 'spatial-forge-api-connected-v1';
 
 const status = document.querySelector('#status');
 const title = document.querySelector('#title');
@@ -51,12 +52,32 @@ function formatDate(value) {
 }
 
 async function apiFetch(path, options = {}) {
-  const response = await fetch(`${API_ORIGIN}${path}`, {
-    credentials: 'include',
-    ...options,
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(`${API_ORIGIN}${path}`, {
+      credentials: 'include',
+      ...options,
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('connection timed out');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+function connectPrivateLibrary() {
+  setStatus('Connecting');
+  refreshLibrary.disabled = true;
+  libraryMessage.textContent = 'Connecting private storage…';
+  libraryMessage.classList.remove('hidden');
+  sessionStorage.setItem(API_CONNECTED_KEY, '1');
+  const returnUrl = `${window.location.origin}${window.location.pathname}`;
+  window.location.replace(`${API_ORIGIN}/browser-connect?return=${encodeURIComponent(returnUrl)}`);
 }
 
 function makeBuildCard(build) {
@@ -129,6 +150,7 @@ function makeBuildCard(build) {
 
 async function loadLibrary() {
   setStatus('Loading');
+  refreshLibrary.textContent = 'Refresh';
   refreshLibrary.disabled = true;
   libraryMessage.textContent = 'Loading builds…';
   libraryMessage.classList.remove('hidden');
@@ -145,7 +167,9 @@ async function loadLibrary() {
     }
     setStatus(`${builds.length} build${builds.length === 1 ? '' : 's'}`);
   } catch (error) {
-    libraryMessage.textContent = `Could not load private builds: ${error.message}`;
+    sessionStorage.removeItem(API_CONNECTED_KEY);
+    libraryMessage.textContent = `Private storage connection failed: ${error.message}`;
+    refreshLibrary.textContent = 'Reconnect';
     setStatus('Library failed');
   } finally {
     refreshLibrary.disabled = false;
@@ -259,6 +283,10 @@ const viewerRequested = Boolean(explicitUrl('model') || explicitUrl('meta'));
 if (viewerRequested) {
   loadViewer();
 } else {
-  refreshLibrary.addEventListener('click', loadLibrary);
-  loadLibrary();
+  refreshLibrary.addEventListener('click', () => {
+    if (sessionStorage.getItem(API_CONNECTED_KEY) === '1') loadLibrary();
+    else connectPrivateLibrary();
+  });
+  if (sessionStorage.getItem(API_CONNECTED_KEY) === '1') loadLibrary();
+  else connectPrivateLibrary();
 }
