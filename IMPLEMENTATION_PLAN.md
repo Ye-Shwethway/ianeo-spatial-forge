@@ -69,12 +69,14 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P3 — VPS Control Plane
 
-- [ ] P3.1 Define minimal authenticated HTTP/job interface.
+- [x] P3.1 Define minimal authenticated HTTP/job interface.
 - [ ] P3.2 Bootstrap service directories and least-privilege service account on VPS.
 - [ ] P3.3 Add temporary job storage with expiry/cleanup.
 - [ ] P3.4 Add build status and protected asset retrieval.
 - [ ] P3.5 Establish GitHub Actions deployment as the normal update path.
 - [ ] P3.6 Remove Bamboo from the normal operational workflow.
+
+**P3.1 contract:** `docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines a public viewer/private VPS split with no database or account system. Initial endpoints are unauthenticated `GET /health`, bearer-authenticated private build status and viewer-session creation, and read-only temporary `/s/{session_id}/{asset}` delivery for only GLB, build-result JSON, front PNG, and three-quarter PNG. Viewer sessions use high-entropy server-side IDs, default 2-hour TTL, 24-hour hard maximum, `no-store`/`no-referrer` headers, and CORS limited to `https://forge.drthorne.uk`. Long-lived control credentials never appear in viewer URLs.
 
 **VPS operating rule:** Manual/Termux/Bamboo access is permitted only for one-time bootstrap, connection establishment, secret installation, or emergency repair. Once the VPS deployment connection is established, normal updates must flow from GitHub Actions to the VPS. Do not make recurring production operation depend on manual Termux commands or Bamboo.
 
