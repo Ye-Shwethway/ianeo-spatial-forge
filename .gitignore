@@ -1,0 +1,74 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Blender / 3D working files
+*.blend1
+*.blend2
+*.blend@
+*.blend~
+*.autosave
+
+# Generated/private asset working directories
+output/
+outputs/
+build/
+builds/
+artifacts/
+private/
+canonical/
+characters/private/
+scenes/private/
+temp/
+tmp/
+
+# Generated 3D/media outputs are not committed by default
+*.glb
+*.gltf
+*.fbx
+*.obj
+*.stl
+*.abc
+*.usd
+*.usda
+*.usdc
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.exr
+
+# Allow deliberately versioned public fixtures/examples
+!fixtures/**/*.glb
+!fixtures/**/*.gltf
+!fixtures/**/*.png
+!fixtures/**/*.jpg
+!fixtures/**/*.jpeg
+!fixtures/**/*.webp
+!examples/**/*.glb
+!examples/**/*.gltf
+!examples/**/*.png
+!examples/**/*.jpg
+!examples/**/*.jpeg
+!examples/**/*.webp
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
