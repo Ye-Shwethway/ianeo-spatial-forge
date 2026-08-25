@@ -22,7 +22,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P0.8 Run workflow and inspect actual artifact outputs.
 - [x] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
 
-**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `spatial-forge-smoke.blend`, `.glb`, and preview.
+**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `.blend`, `.glb`, and preview.
 
 ## P1 — Human Generation Proof
 
@@ -51,23 +51,21 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 **P2.4 runtime proof:** run `32864975879`; exact `chest_circumference = 110 cm` was preserved only in `unsupported_fields`, not fabricated as an engine control; GLB remained valid.
 
+**P2.5/P2.6 implementation in progress:** `revision.parent_version` plus a deliberately narrow `locked_fields` list now supports only the six proven `phenotype.*` controls. `scripts/build_character.py` requires `SF_PARENT_MANIFEST` for revisions, rejects parent/version/character mismatches, and fails before generation if any locked control drifts. `fixtures/generic-character-v2.json` changes only `muscle` from `0.72` to `0.52` while locking the other five phenotype controls. Runtime proof workflow: `.github/workflows/character-revision.yml`.
+
 ## P2V — Phone Viewer Foundation (pulled forward)
 
 - [x] P2V.1 Add a framework-free mobile viewer shell under `viewer/`.
-- [ ] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
-- [ ] P2V.3 Display optional front and three-quarter preview URLs.
-- [ ] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
+- [x] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
+- [x] P2V.3 Display optional front and three-quarter preview URLs.
+- [x] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
 - [x] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
 - [x] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
-- [ ] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
+- [x] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
 
-**P2V.1 runtime proof:** Viewer Smoke run `32866763601` passed serving/fetch verification for the static shell and pinned `@google/model-viewer@4.3.1` wiring.
+**P2V runtime proof:** Viewer Smoke run `32866763601` proved the static shell. Direct Upload runs `32876020417` and `32876094428` proved GitHub Actions → Wrangler → Cloudflare Pages plus HTTPS on both Pages and custom-domain URLs. Generic demo run `32876486511` reused the proven P2.4 artifact, deployed GLB/previews/metadata under `/demo/`, and verified the live files. The Creator then confirmed on Android that the real GLB rendered, touch interaction worked, front and three-quarter evidence displayed, and build metadata including the unsupported `chest_circumference = 110 cm` request rendered correctly.
 
-**P2V.5 contract:** `viewer/README.md` defines stateless `model`, `meta`, `front`, `threeQuarter`, and `title` URL inputs. The viewer owns no database or storage.
-
-**P2V.6 runtime proof:** Cloudflare native Git integration was abandoned after repeated integration failure. The canonical deployment path is now GitHub Actions → Wrangler → Cloudflare Pages Direct Upload. Workflow `.github/workflows/deploy-pages.yml` deploys `viewer/` with Node 22, `contents: read`, production concurrency, and repository secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`. First production deploy run `32876020417` on commit `4901727e1b72a29ba5ec2692afdbf3da8cf85d39` succeeded. Verification run `32876094428` on commit `411036bcf9e57cd5faec4ee69fa32725ec2e7bce` also succeeded and fetched both `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/` over HTTPS, confirming expected Spatial Forge page content. Cloudflare Pages project remains `ianeo-spatial-forge`; no Worker, D1, KV, R2, Tunnel, or database was added.
-
-**Real generic demo staging proof:** `.github/workflows/deploy-viewer-demo.yml` reuses the already-proven P2.4 artifact instead of re-running Blender. Successful run `32876486511` on commit `f3ebe566d26fa1bdaff2ba6287261a4f0d2778e0` downloaded artifact `spatial-forge-character-manifest`, verified `generic-unsupported-v1.glb`, `front.png`, `three-quarter.png`, and `build-result.json`, deployed them under `/demo/`, and verified the live custom-domain JSON, >8 MB GLB, preview PNG, and viewer URL. This proves browser-accessible real demo assets are live. P2V.2/P2V.3/P2V.4/P2V.7 remain unchecked until the Creator confirms actual Android rendering, touch rotate/zoom/reset, previews, and metadata display.
+**Privacy boundary:** The current `/demo/` files are generic public-safe fixtures. Canonical/private character manifests, GLBs, previews, references, and metadata must never be deployed as static public Pages assets.
 
 ## P3 — VPS Control Plane
 
@@ -77,6 +75,8 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [ ] P3.4 Add build status and protected asset retrieval.
 - [ ] P3.5 Establish GitHub Actions deployment as the normal update path.
 - [ ] P3.6 Remove Bamboo from the normal operational workflow.
+
+**VPS operating rule:** Manual/Termux/Bamboo access is permitted only for one-time bootstrap, connection establishment, secret installation, or emergency repair. Once the VPS deployment connection is established, normal updates must flow from GitHub Actions to the VPS. Do not make recurring production operation depend on manual Termux commands or Bamboo.
 
 ## P4 — Telegram Delivery + Mini App
 
