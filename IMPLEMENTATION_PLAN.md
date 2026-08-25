@@ -12,7 +12,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 ## P0 — Headless Blender Proof
 
-- [ ] P0.1 Add minimal GitHub Actions workflow with manual dispatch.
+- [x] P0.1 Add minimal GitHub Actions workflow with manual dispatch.
 - [ ] P0.2 Install or provision a pinned Blender version on `ubuntu-latest`.
 - [ ] P0.3 Add one tiny Blender Python smoke script.
 - [ ] P0.4 Generate a deterministic primitive test scene.
