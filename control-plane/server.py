@@ -3,6 +3,7 @@ import json
 import mimetypes
 import os
 import secrets
+import shutil
 import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -43,6 +44,10 @@ def write_json_atomic(path, data):
     tmp.replace(path)
 
 
+def valid_build_id(build_id):
+    return isinstance(build_id, str) and bool(build_id) and "/" not in build_id and not build_id.startswith(".")
+
+
 def cleanup_expired_sessions(now=None):
     now = int(time.time()) if now is None else int(now)
     removed = 0
@@ -67,8 +72,29 @@ def asset_url(path):
     return f"{ASSET_ORIGIN}{path}" if ASSET_ORIGIN else path
 
 
+def build_summary(build_dir):
+    metadata_path = build_dir / "build-result.json"
+    try:
+        metadata = read_json(metadata_path)
+    except Exception:
+        metadata = {}
+    size_bytes = sum(
+        path.stat().st_size
+        for name in ALLOWED_ASSETS.values()
+        if (path := build_dir / name).is_file()
+    )
+    return {
+        "build_id": build_dir.name,
+        "status": metadata.get("status", "ready"),
+        "character_id": metadata.get("character_id"),
+        "version": metadata.get("version"),
+        "created_at": utc_iso(int(build_dir.stat().st_mtime)),
+        "size_bytes": size_bytes,
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SpatialForge/0.2"
+    server_version = "SpatialForge/0.3"
 
     def log_message(self, fmt, *args):
         print(f"{self.client_address[0]} {self.command} {self._safe_path()} {fmt % args}")
@@ -79,7 +105,28 @@ class Handler(BaseHTTPRequestHandler):
             return f"/s/<redacted>/{parts[-1] if parts else ''}"
         return self.path.split("?", 1)[0]
 
-    def _json(self, status, payload, extra_headers=None):
+    def _browser_request(self):
+        return bool(
+            self.headers.get("Cf-Access-Jwt-Assertion")
+            and self.headers.get("Cf-Access-Authenticated-User-Email")
+        )
+
+    def _control_authorized(self):
+        if not CONTROL_TOKEN:
+            return False
+        return secrets.compare_digest(self.headers.get("Authorization", ""), f"Bearer {CONTROL_TOKEN}")
+
+    def _authorized(self):
+        return self._control_authorized() or self._browser_request()
+
+    def _cors_headers(self):
+        return {
+            "Access-Control-Allow-Origin": VIEWER_ORIGIN,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
+
+    def _json(self, status, payload, extra_headers=None, browser_cors=False):
         body = (json.dumps(payload, separators=(",", ":")) + "\n").encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -87,21 +134,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if browser_cors:
+            for key, value in self._cors_headers().items():
+                self.send_header(key, value)
         if extra_headers:
             for key, value in extra_headers.items():
                 self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
 
-    def _authorized(self):
-        if not CONTROL_TOKEN:
-            return False
-        return secrets.compare_digest(self.headers.get("Authorization", ""), f"Bearer {CONTROL_TOKEN}")
-
-    def _require_auth(self):
+    def _require_auth(self, browser_cors=False):
         if self._authorized():
             return True
-        self._json(401, {"error": "unauthorized"})
+        self._json(401, {"error": "unauthorized"}, browser_cors=browser_cors)
         return False
 
     def do_GET(self):
@@ -110,17 +155,31 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/health":
             return self._json(200, {"status": "ok", "service": "ianeo-spatial-forge", "version": VERSION})
 
+        if path == "/v1/builds":
+            if not self._require_auth(browser_cors=True):
+                return
+            builds = []
+            if BUILDS.is_dir():
+                for build_dir in BUILDS.iterdir():
+                    if not build_dir.is_dir() or not valid_build_id(build_dir.name):
+                        continue
+                    if not (build_dir / "model.glb").is_file() or not (build_dir / "build-result.json").is_file():
+                        continue
+                    builds.append(build_summary(build_dir))
+            builds.sort(key=lambda item: item["created_at"], reverse=True)
+            return self._json(200, {"builds": builds}, browser_cors=True)
+
         if path.startswith("/v1/builds/"):
-            if not self._require_auth():
+            if not self._require_auth(browser_cors=True):
                 return
             build_id = path.removeprefix("/v1/builds/")
-            if not build_id or "/" in build_id or build_id.startswith("."):
-                return self._json(404, {"error": "not_found"})
+            if not valid_build_id(build_id):
+                return self._json(404, {"error": "not_found"}, browser_cors=True)
             build_dir = BUILDS / build_id
             metadata = build_dir / "build-result.json"
             if not metadata.is_file():
-                return self._json(404, {"error": "not_found"})
-            return self._json(200, {"build_id": build_id, "status": "ready", "metadata": read_json(metadata)})
+                return self._json(404, {"error": "not_found"}, browser_cors=True)
+            return self._json(200, {"build_id": build_id, "status": "ready", "metadata": read_json(metadata)}, browser_cors=True)
 
         if path.startswith("/s/"):
             return self._serve_session_asset(path)
@@ -131,31 +190,50 @@ class Handler(BaseHTTPRequestHandler):
         cleanup_expired_sessions()
         path = self.path.split("?", 1)[0]
         prefix = "/v1/builds/"
+
+        if path.startswith(prefix) and path.endswith("/delete"):
+            if not self._require_auth(browser_cors=True):
+                return
+            build_id = path[len(prefix):-len("/delete")]
+            if not valid_build_id(build_id):
+                return self._json(404, {"error": "not_found"}, browser_cors=True)
+            build_dir = BUILDS / build_id
+            if not build_dir.is_dir() or build_dir.is_symlink():
+                return self._json(404, {"error": "not_found"}, browser_cors=True)
+            shutil.rmtree(build_dir)
+            for session_path in SESSIONS.glob("*.json"):
+                try:
+                    if read_json(session_path).get("build_id") == build_id:
+                        session_path.unlink()
+                except Exception:
+                    pass
+            return self._json(200, {"deleted": True, "build_id": build_id}, browser_cors=True)
+
         suffix = "/viewer-session"
         if not (path.startswith(prefix) and path.endswith(suffix)):
             return self._json(404, {"error": "not_found"})
-        if not self._require_auth():
+        if not self._require_auth(browser_cors=True):
             return
 
         build_id = path[len(prefix):-len(suffix)]
-        if not build_id or "/" in build_id or build_id.startswith("."):
-            return self._json(404, {"error": "not_found"})
+        if not valid_build_id(build_id):
+            return self._json(404, {"error": "not_found"}, browser_cors=True)
         build_dir = BUILDS / build_id
         if not (build_dir / "model.glb").is_file() or not (build_dir / "build-result.json").is_file():
-            return self._json(404, {"error": "not_found"})
+            return self._json(404, {"error": "not_found"}, browser_cors=True)
 
         length = int(self.headers.get("Content-Length", "0") or "0")
         if length > 4096:
-            return self._json(413, {"error": "request_too_large"})
+            return self._json(413, {"error": "request_too_large"}, browser_cors=True)
         payload = {}
         if length:
             try:
                 payload = json.loads(self.rfile.read(length))
             except Exception:
-                return self._json(400, {"error": "invalid_json"})
+                return self._json(400, {"error": "invalid_json"}, browser_cors=True)
         ttl = payload.get("ttl_seconds", DEFAULT_TTL)
         if not isinstance(ttl, int) or isinstance(ttl, bool) or not 60 <= ttl <= MAX_TTL:
-            return self._json(400, {"error": "invalid_ttl"})
+            return self._json(400, {"error": "invalid_ttl"}, browser_cors=True)
 
         session_id = secrets.token_urlsafe(32)
         expires_at = int(time.time()) + ttl
@@ -170,7 +248,7 @@ class Handler(BaseHTTPRequestHandler):
             f"&threeQuarter={quote(asset_url(base + '/three-quarter.png'), safe='/:')}"
             f"&title={quote(build_id)}"
         )
-        self._json(201, {"expires_at": utc_iso(expires_at), "viewer_url": viewer_url})
+        self._json(201, {"expires_at": utc_iso(expires_at), "viewer_url": viewer_url}, browser_cors=True)
 
     def _serve_session_asset(self, path):
         parts = path.strip("/").split("/")
@@ -193,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(404, {"error": "not_found"})
 
         build_id = session.get("build_id", "")
-        if not isinstance(build_id, str) or not build_id or "/" in build_id or build_id.startswith("."):
+        if not valid_build_id(build_id):
             return self._json(404, {"error": "not_found"})
         source = BUILDS / build_id / ALLOWED_ASSETS[asset]
         if not source.is_file():
@@ -210,6 +288,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Access-Control-Allow-Origin", VIEWER_ORIGIN)
         self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Vary", "Origin")
         self.end_headers()
         with source.open("rb") as handle:
             while chunk := handle.read(1024 * 1024):
