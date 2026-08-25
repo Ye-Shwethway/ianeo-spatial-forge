@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "character_id": "generic-character",
+  "version": 1,
+  "generator": {
+    "engine": "mpfb"
+  },
+  "phenotype": {
+    "gender": 1.0,
+    "age": 0.36,
+    "muscle": 0.72,
+    "weight": 0.48,
+    "height": 0.62,
+    "proportions": 0.58
+  }
+}
