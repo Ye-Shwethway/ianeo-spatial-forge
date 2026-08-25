@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:ianeo-spatial-forge:schema:character-build:1.0",
   "title": "IANEO Spatial Forge Character Build Manifest",
-  "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements.",
+  "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements. Optional requested_measurements preserve exact user intent separately from engine controls.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -50,25 +50,38 @@
         "proportions"
       ],
       "properties": {
-        "gender": {
-          "$ref": "#/$defs/macroControl"
-        },
-        "age": {
-          "$ref": "#/$defs/macroControl"
-        },
-        "muscle": {
-          "$ref": "#/$defs/macroControl"
-        },
-        "weight": {
-          "$ref": "#/$defs/macroControl"
-        },
-        "height": {
-          "$ref": "#/$defs/macroControl"
-        },
-        "proportions": {
-          "$ref": "#/$defs/macroControl"
-        }
+        "gender": {"$ref": "#/$defs/macroControl"},
+        "age": {"$ref": "#/$defs/macroControl"},
+        "muscle": {"$ref": "#/$defs/macroControl"},
+        "weight": {"$ref": "#/$defs/macroControl"},
+        "height": {"$ref": "#/$defs/macroControl"},
+        "proportions": {"$ref": "#/$defs/macroControl"}
       }
+    },
+    "requested_measurements": {
+      "type": "array",
+      "description": "Exact real-world measurement intent kept separate from MPFB macro controls. P2.4 reports these as unsupported unless a future proven mapping exists.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "value", "unit"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["cm", "in", "kg", "lb", "percent"]
+          }
+        }
+      },
+      "default": []
     }
   },
   "$defs": {
