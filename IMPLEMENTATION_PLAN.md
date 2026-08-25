@@ -42,14 +42,16 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 ## P2 — Minimal Character Manifest
 
 - [x] P2.0 Research current agent-oriented Blender creation patterns and add a project-specific `spatial-forge-3d` skill covering reproducible creation, truthful precision, scoped revisions, structural + visual validation, export/fresh-import checks, version-aware reference policy, and late-stage-only MCP policy.
-- [ ] P2.1 Define compact JSON schema for character build input.
-- [ ] P2.2 Define build-result metadata schema.
-- [ ] P2.3 Map supported manifest fields to engine controls.
+- [x] P2.1 Define compact JSON schema for character build input.
+- [x] P2.2 Define build-result metadata schema.
+- [x] P2.3 Map supported manifest fields to engine controls.
 - [ ] P2.4 Add explicit unsupported-field reporting; never silently fake precision.
 - [ ] P2.5 Add version identifier and scoped revision/lock semantics.
 - [ ] P2.6 Build two versions of a generic test character and verify scoped changes.
 
-**P2 workflow intelligence:** `skills/spatial-forge-3d/SKILL.md` is now the routing layer for Blender/MPFB/3D work. Its references define the smallest-build contract, deterministic manifest/Python source rule, fixed visual evidence, structural-vs-visual gates, GLB fresh-import validation when relevant, and Blender/MPFB reference hierarchy. The proven baseline remains Blender `4.5.12 LTS` + MPFB `2.0.17`; external skills are methodology references, not runtime dependencies.
+**P2 workflow intelligence:** `skills/spatial-forge-3d/SKILL.md` is the routing layer for Blender/MPFB/3D work. Its references define the smallest-build contract, deterministic manifest/Python source rule, fixed visual evidence, structural-vs-visual gates, GLB fresh-import validation when relevant, and Blender/MPFB reference hierarchy. The proven baseline remains Blender `4.5.12 LTS` + MPFB `2.0.17`; external skills are methodology references, not runtime dependencies.
+
+**P2.1–P2.3 runtime proof:** `schemas/character-build.schema.json` and `schemas/build-result.schema.json` passed Draft 2020-12 static validation. `fixtures/generic-character-v1.json` contains only the six runtime-proven normalized MPFB controls: gender, age, muscle, weight, height, and proportions. Character Manifest Proof run `32864360900` on commit `53c5e16bb68a4b588409cb524c0904fbb324225a` passed every step. The inspected artifact reported Blender `4.5.12 LTS`, MPFB `2.0.17`, exactly the six requested applied controls, 1 GLB mesh definition, 1 skin, and 53 joints. Front and three-quarter previews were visually inspected and showed the expected generic human. A separate clean-Blender fresh import of `generic-character-v1.glb` succeeded with 2 imported mesh objects, 1 armature, and 53 bones. The manifest builder asserts `mpfb.VERSION == 2.0.17`, so extension drift now fails visibly instead of silently changing the proven runtime.
 
 ## P3 — VPS Control Plane
 
