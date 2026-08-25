@@ -40,7 +40,7 @@ jobs:
           test -n "$VPS_SSH_KEY_B64"
           test -n "$VPS_KNOWN_HOSTS"
           install -d -m 0700 "$HOME/.ssh"
-          printf '%s' "$VPS_SSH_KEY_B64" | base64 --decode > "$HOME/.ssh/id_ed25519"
+          printf '%s' "$VPS_SSH_KEY_B64" | tr -d '[:space:]' | base64 --decode > "$HOME/.ssh/id_ed25519"
           chmod 0600 "$HOME/.ssh/id_ed25519"
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" >/dev/null
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
