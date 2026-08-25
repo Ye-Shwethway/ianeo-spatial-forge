@@ -22,6 +22,9 @@ MCP is intentionally deferred until the backend and delivery path are independen
 - Blender runs headlessly in Actions.
 - P0 proved Blender `4.5.12 LTS` can generate `.blend`, `.glb`, and a preview on `ubuntu-latest` after installing `libegl1`.
 - P1 proved MPFB `2.0.17` can be installed non-interactively, generate a generic human from script, apply macro phenotype parameters, attach the built-in `game_engine` rig, export GLB, and render previews headlessly.
+- P2 now has compact versioned character-build and build-result schemas plus a manifest-driven runtime path for the six proven MPFB macro controls.
+- The manifest builder reads `mpfb.VERSION` at runtime and fails if it is not `2.0.17`, preventing silent extension drift. A future exact package/archive pin should be a dedicated dependency slice if the extension repository moves beyond this baseline.
+- Exported GLB is validated both structurally and by clean-Blender fresh import when relevant.
 - `skills/spatial-forge-3d/SKILL.md` is the project-specific 3D creation intelligence router. It encodes reproducible generation, truthful precision, scoped revisions, structural-vs-visual validation, export/fresh-import checks, and version-aware Blender/MPFB reference policy.
 - External Blender-agent skills are research/methodology references only. Do not copy their runtime assumptions blindly and do not upgrade the proven stack merely because another project uses a newer Blender version.
 - VPS will later be a lightweight control plane and temporary private asset store, not the heavy rendering machine.
@@ -82,23 +85,53 @@ The skill establishes:
 - a Blender/MPFB evidence hierarchy that prefers proven local runtime and official/version-matched facts
 - a late-stage-only MCP boundary
 
+### P2.1–P2.3 — PASS
+
+Schemas:
+- `schemas/character-build.schema.json`
+- `schemas/build-result.schema.json`
+
+Generic public fixture:
+- `fixtures/generic-character-v1.json`
+
+Runtime builder and validator:
+- `scripts/build_character.py`
+- `scripts/validate_glb.py`
+- `.github/workflows/character-manifest.yml`
+
+Successful workflow run: `32864360900`
+Commit: `53c5e16bb68a4b588409cb524c0904fbb324225a`
+Blender: `4.5.12 LTS`
+MPFB: `2.0.17`
+
+Inspected build-result metadata confirmed the exact requested normalized controls:
+- gender `1.0`
+- age `0.36`
+- muscle `0.72`
+- weight `0.48`
+- height `0.62`
+- proportions `0.58`
+
+GLB structural inspection found 1 mesh definition, 1 skin, and 53 joints. Clean-Blender fresh import succeeded with 2 mesh objects, 1 armature, and 53 bones. Front and three-quarter previews were visually inspected and showed the expected generic human without obvious missing geometry or export corruption.
+
+The workflow currently installs MPFB from Blender's extension repository by package id, but the builder asserts runtime `mpfb.VERSION == 2.0.17`; unexpected extension drift therefore fails visibly instead of silently changing the proven runtime.
+
 ## Current Slice
 
-### P2.1 — Minimal Character Build Schema
+### P2.4 — Unsupported Precision Reporting
 
-Keep this intentionally compact. The manifest must describe only controls the engine can truthfully support.
+Build the smallest explicit mechanism for requests the current MPFB manifest cannot honestly reproduce.
 
-Read `skills/spatial-forge-3d/SKILL.md` before implementation, then route to its reference files as needed.
+Desired behavior:
+1. preserve the supported six normalized macro controls unchanged
+2. allow a narrow request/evidence representation for unsupported or approximate user intent without pretending it is an engine control
+3. record unsupported requested fields with a clear reason in build-result metadata
+4. prove the builder does not silently map an unsupported real-world measurement such as an exact chest circumference to a fabricated MPFB control
+5. keep this generic and public-safe
 
-Target sequence:
-1. define one small versioned character-build JSON schema
-2. define one small build-result metadata schema
-3. map supported macro fields to MPFB controls
-4. report unsupported requested precision explicitly rather than fabricating it
-5. add version id plus narrow lock/revision semantics
-6. build two generic manifest revisions and prove that the intended field changes while locked fields remain stable
+Do not expand this into a full anthropometric schema, RPG/stat model, canonical character system, database, VPS service, Telegram transport, or MCP.
 
-Do not introduce a broad RPG/stat schema, database layer, VPS service, Telegram transport, private canon, or MCP in P2.
+After P2.4, proceed to P2.5 version/lock semantics and then P2.6 two-revision runtime proof.
 
 ## Verification Method
 
