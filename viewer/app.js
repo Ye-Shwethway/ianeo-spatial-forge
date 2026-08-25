@@ -1,8 +1,15 @@
 const params = new URLSearchParams(window.location.search);
+const API_ORIGIN = 'https://assets.drthorne.uk';
 
-const model = document.querySelector('#model');
 const status = document.querySelector('#status');
 const title = document.querySelector('#title');
+const librarySection = document.querySelector('#librarySection');
+const libraryMessage = document.querySelector('#libraryMessage');
+const buildList = document.querySelector('#buildList');
+const refreshLibrary = document.querySelector('#refreshLibrary');
+const viewerMode = document.querySelector('#viewerMode');
+
+const model = document.querySelector('#model');
 const hint = document.querySelector('#modelHint');
 const resetButton = document.querySelector('#resetButton');
 const downloadModel = document.querySelector('#downloadModel');
@@ -32,6 +39,119 @@ function setStatus(text) {
   status.textContent = text;
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return '—';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
+}
+
+async function apiFetch(path, options = {}) {
+  const response = await fetch(`${API_ORIGIN}${path}`, {
+    credentials: 'include',
+    ...options,
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+function makeBuildCard(build) {
+  const card = document.createElement('article');
+  card.className = 'build-card';
+
+  const body = document.createElement('div');
+  body.className = 'build-body';
+
+  const heading = document.createElement('h3');
+  heading.textContent = build.build_id;
+
+  const meta = document.createElement('div');
+  meta.className = 'build-meta';
+  const character = build.character_id ? `Character: ${build.character_id}` : 'Character metadata unavailable';
+  const version = build.version === undefined || build.version === null ? '' : ` · v${build.version}`;
+  meta.textContent = `${character}${version}`;
+
+  const detail = document.createElement('div');
+  detail.className = 'build-detail';
+  detail.textContent = `${formatBytes(build.size_bytes)} · ${formatDate(build.created_at)}`;
+
+  body.append(heading, meta, detail);
+
+  const actions = document.createElement('div');
+  actions.className = 'build-actions';
+
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.textContent = 'Open 3D';
+  open.addEventListener('click', async () => {
+    open.disabled = true;
+    setStatus('Opening');
+    try {
+      const session = await apiFetch(`/v1/builds/${encodeURIComponent(build.build_id)}/viewer-session`, {
+        method: 'POST',
+      });
+      window.location.assign(session.viewer_url);
+    } catch (error) {
+      open.disabled = false;
+      setStatus('Open failed');
+      libraryMessage.textContent = `Could not open build: ${error.message}`;
+      libraryMessage.classList.remove('hidden');
+    }
+  });
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'danger-button';
+  remove.textContent = 'Delete';
+  remove.addEventListener('click', async () => {
+    if (!window.confirm(`Delete ${build.build_id} permanently?`)) return;
+    remove.disabled = true;
+    setStatus('Deleting');
+    try {
+      await apiFetch(`/v1/builds/${encodeURIComponent(build.build_id)}/delete`, { method: 'POST' });
+      await loadLibrary();
+    } catch (error) {
+      remove.disabled = false;
+      setStatus('Delete failed');
+      libraryMessage.textContent = `Could not delete build: ${error.message}`;
+      libraryMessage.classList.remove('hidden');
+    }
+  });
+
+  actions.append(open, remove);
+  card.append(body, actions);
+  return card;
+}
+
+async function loadLibrary() {
+  setStatus('Loading');
+  refreshLibrary.disabled = true;
+  libraryMessage.textContent = 'Loading builds…';
+  libraryMessage.classList.remove('hidden');
+  buildList.replaceChildren();
+
+  try {
+    const data = await apiFetch('/v1/builds');
+    const builds = Array.isArray(data.builds) ? data.builds : [];
+    if (!builds.length) {
+      libraryMessage.textContent = 'No private builds yet.';
+    } else {
+      libraryMessage.classList.add('hidden');
+      for (const build of builds) buildList.appendChild(makeBuildCard(build));
+    }
+    setStatus(`${builds.length} build${builds.length === 1 ? '' : 's'}`);
+  } catch (error) {
+    libraryMessage.textContent = `Could not load private builds: ${error.message}`;
+    setStatus('Library failed');
+  } finally {
+    refreshLibrary.disabled = false;
+  }
+}
+
 function addSummary(label, value) {
   if (value === undefined || value === null || value === '') return;
   const dt = document.createElement('dt');
@@ -48,41 +168,42 @@ function showPreview(url, figure, image) {
   return true;
 }
 
-const customTitle = params.get('title');
-if (customTitle) title.textContent = customTitle;
+async function loadViewer() {
+  librarySection.classList.add('hidden');
+  viewerMode.classList.remove('hidden');
 
-const modelUrl = explicitUrl('model');
-if (modelUrl) {
-  model.src = modelUrl;
-  hint.classList.add('hidden');
-  downloadModel.href = modelUrl;
-  downloadModel.classList.remove('hidden');
-  setStatus('Loading 3D');
+  const customTitle = params.get('title');
+  title.textContent = customTitle || '3D Viewer';
 
-  model.addEventListener('load', () => setStatus('3D ready'));
-  model.addEventListener('error', () => setStatus('3D failed'));
-}
+  const modelUrl = explicitUrl('model');
+  if (modelUrl) {
+    model.src = modelUrl;
+    hint.classList.add('hidden');
+    downloadModel.href = modelUrl;
+    downloadModel.classList.remove('hidden');
+    setStatus('Loading 3D');
+    model.addEventListener('load', () => setStatus('3D ready'));
+    model.addEventListener('error', () => setStatus('3D failed'));
+  }
 
-resetButton.addEventListener('click', () => {
-  model.cameraOrbit = 'auto auto auto';
-  model.cameraTarget = 'auto auto auto';
-  model.fieldOfView = 'auto';
-  model.jumpCameraToGoal();
-});
+  resetButton.addEventListener('click', () => {
+    model.cameraOrbit = 'auto auto auto';
+    model.cameraTarget = 'auto auto auto';
+    model.fieldOfView = 'auto';
+    model.jumpCameraToGoal();
+  });
 
-const frontUrl = explicitUrl('front');
-const threeQuarterUrl = explicitUrl('threeQuarter');
-if (
-  showPreview(frontUrl, frontFigure, frontPreview) |
-  showPreview(threeQuarterUrl, threeQuarterFigure, threeQuarterPreview)
-) {
-  previewSection.classList.remove('hidden');
-}
+  const frontUrl = explicitUrl('front');
+  const threeQuarterUrl = explicitUrl('threeQuarter');
+  if (
+    showPreview(frontUrl, frontFigure, frontPreview) |
+    showPreview(threeQuarterUrl, threeQuarterFigure, threeQuarterPreview)
+  ) {
+    previewSection.classList.remove('hidden');
+  }
 
-async function loadMetadata() {
   const metaUrl = explicitUrl('meta');
   if (!metaUrl) return;
-
   setStatus(modelUrl ? 'Loading details' : 'Loading metadata');
 
   try {
@@ -92,7 +213,6 @@ async function loadMetadata() {
 
     metadataEmpty.classList.add('hidden');
     metadata.classList.remove('hidden');
-
     addSummary('Character', data.character_id);
     addSummary('Version', data.version);
     addSummary('Status', data.status);
@@ -115,16 +235,13 @@ async function loadMetadata() {
       for (const item of unsupportedFields) {
         const box = document.createElement('div');
         box.className = 'warning';
-
         const heading = document.createElement('strong');
         const requested = item.requested_value === undefined
           ? ''
           : ` — requested ${item.requested_value}${item.unit ? ` ${item.unit}` : ''}`;
         heading.textContent = `${item.field ?? 'Unsupported request'}${requested}`;
-
         const reason = document.createElement('div');
         reason.textContent = item.reason ?? 'No supported mapping was reported.';
-
         box.append(heading, reason);
         unsupported.appendChild(box);
       }
@@ -138,4 +255,10 @@ async function loadMetadata() {
   }
 }
 
-loadMetadata();
+const viewerRequested = Boolean(explicitUrl('model') || explicitUrl('meta'));
+if (viewerRequested) {
+  loadViewer();
+} else {
+  refreshLibrary.addEventListener('click', loadLibrary);
+  loadLibrary();
+}
