@@ -44,14 +44,14 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P2.2 Define build-result metadata schema.
 - [x] P2.3 Map supported manifest fields to engine controls.
 - [x] P2.4 Add explicit unsupported-field reporting; never silently fake precision.
-- [ ] P2.5 Add version identifier and scoped revision/lock semantics.
-- [ ] P2.6 Build two versions of a generic test character and verify scoped changes.
+- [x] P2.5 Add version identifier and scoped revision/lock semantics.
+- [x] P2.6 Build two versions of a generic test character and verify scoped changes.
 
 **P2.1–P2.3 runtime proof:** run `32864360900`; exactly six normalized MPFB controls applied; clean fresh import succeeded with 2 mesh objects, 1 armature, and 53 bones.
 
 **P2.4 runtime proof:** run `32864975879`; exact `chest_circumference = 110 cm` was preserved only in `unsupported_fields`, not fabricated as an engine control; GLB remained valid.
 
-**P2.5/P2.6 implementation in progress:** `revision.parent_version` plus a deliberately narrow `locked_fields` list now supports only the six proven `phenotype.*` controls. `scripts/build_character.py` requires `SF_PARENT_MANIFEST` for revisions, rejects parent/version/character mismatches, and fails before generation if any locked control drifts. `fixtures/generic-character-v2.json` changes only `muscle` from `0.72` to `0.52` while locking the other five phenotype controls. Runtime proof workflow: `.github/workflows/character-revision.yml`.
+**P2.5/P2.6 runtime proof:** Character Revision Proof run `32877860898` on commit `137dafa67823894a1dfc95d3aa96370996d3739b` completed successfully. `revision.parent_version` and a deliberately narrow `locked_fields` list support only proven `phenotype.*` controls. The runtime builder requires the parent manifest and rejects parent/version/character mismatch or locked-field drift before generation. v1 and v2 were both built with Blender `4.5.12 LTS` + MPFB `2.0.17`; only `muscle` changed from `0.72` to `0.52`, while gender, age, weight, height, and proportions remained exact. The v2 GLB fresh-imported successfully with 2 mesh objects, 1 armature, and 53 joints. Artifact `spatial-forge-character-revision` was downloaded and inspected; both front and three-quarter preview pairs were visually inspected with no obvious corruption. The visual effect of this neutral-material muscle delta is subtle, so no stronger appearance claim is made.
 
 ## P2V — Phone Viewer Foundation (pulled forward)
 
