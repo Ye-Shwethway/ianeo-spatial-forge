@@ -29,6 +29,14 @@ button, a { font: inherit; }
   margin-bottom: 14px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .eyebrow {
   color: #9aabcf;
   font-size: 0.78rem;
@@ -49,6 +57,24 @@ h3 { margin: 18px 0 10px; font-size: 0.92rem; color: #c7d2ee; }
   color: #aebddd;
   font-size: 0.78rem;
 }
+
+.logout-link {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid #31415f;
+  border-radius: 12px;
+  background: #111a2e;
+  color: #cbd6ef;
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.logout-link:active { transform: translateY(1px); }
+.logout-link:focus-visible { outline: 2px solid #8eb8ff; outline-offset: 2px; }
 
 .card {
   margin-bottom: 12px;
@@ -156,6 +182,8 @@ figcaption { margin-top: 6px; color: #9daccc; font-size: 0.82rem; text-align: ce
 
 @media (max-width: 460px) {
   .shell { padding-left: 10px; padding-right: 10px; }
+  .topbar { gap: 10px; }
+  .topbar-actions { max-width: 118px; }
   .card { border-radius: 15px; }
   model-viewer { min-height: 390px; height: 58vh; }
   .preview-grid { grid-template-columns: 1fr 1fr; }
