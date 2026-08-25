@@ -22,7 +22,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P0.8 Run workflow and inspect actual artifact outputs.
 - [x] P0.9 Record exact Blender version, workflow run, outputs, and any limitations in docs.
 
-**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`. Artifact `spatial-forge-blender-smoke` contained an inspected `.blend`, `.glb`, and preview.
+**P0 runtime proof:** Blender `4.5.12 LTS`; successful workflow run `32859113238` on commit `f5d3ebf5bef58d6f445dd4f68a91d6b153cabe34`.
 
 ## P1 — Human Generation Proof
 
@@ -47,11 +47,9 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P2.5 Add version identifier and scoped revision/lock semantics.
 - [x] P2.6 Build two versions of a generic test character and verify scoped changes.
 
-**P2.1–P2.3 runtime proof:** run `32864360900`; exactly six normalized MPFB controls applied; clean fresh import succeeded with 2 mesh objects, 1 armature, and 53 bones.
+**P2.1–P2.4 proof:** runs `32864360900` and `32864975879` proved six normalized MPFB controls, fresh-import validity, and explicit unsupported exact-measurement reporting.
 
-**P2.4 runtime proof:** run `32864975879`; exact `chest_circumference = 110 cm` was preserved only in `unsupported_fields`, not fabricated as an engine control; GLB remained valid.
-
-**P2.5/P2.6 runtime proof:** Character Revision Proof run `32877860898` on commit `137dafa67823894a1dfc95d3aa96370996d3739b` completed successfully. `revision.parent_version` and a deliberately narrow `locked_fields` list support only proven `phenotype.*` controls. The runtime builder requires the parent manifest and rejects parent/version/character mismatch or locked-field drift before generation. v1 and v2 were both built with Blender `4.5.12 LTS` + MPFB `2.0.17`; only `muscle` changed from `0.72` to `0.52`, while gender, age, weight, height, and proportions remained exact. The v2 GLB fresh-imported successfully with 2 mesh objects, 1 armature, and 53 joints. Artifact `spatial-forge-character-revision` was downloaded and inspected; both front and three-quarter preview pairs were visually inspected with no obvious corruption. The visual effect of this neutral-material muscle delta is subtle, so no stronger appearance claim is made.
+**P2.5/P2.6 runtime proof:** Character Revision Proof run `32877860898` on commit `137dafa67823894a1dfc95d3aa96370996d3739b` completed successfully. Only `muscle` changed from `0.72` to `0.52`; five declared phenotype locks remained exact. v2 fresh import succeeded with 2 mesh objects, 1 armature, and 53 joints. Preview pairs were inspected; no stronger appearance claim is made beyond the proven scoped engine change.
 
 ## P2V — Phone Viewer Foundation (pulled forward)
 
@@ -63,9 +61,9 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [x] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
 - [x] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
 
-**P2V runtime proof:** Viewer Smoke run `32866763601` proved the static shell. Direct Upload runs `32876020417` and `32876094428` proved GitHub Actions → Wrangler → Cloudflare Pages plus HTTPS on both Pages and custom-domain URLs. Generic demo run `32876486511` reused the proven P2.4 artifact, deployed GLB/previews/metadata under `/demo/`, and verified the live files. The Creator then confirmed on Android that the real GLB rendered, touch interaction worked, front and three-quarter evidence displayed, and build metadata including the unsupported `chest_circumference = 110 cm` request rendered correctly.
+**P2V runtime proof:** Viewer Smoke run `32866763601`, Direct Upload runs `32876020417` / `32876094428`, and generic demo run `32876486511` proved the mobile viewer and live delivery. The Creator confirmed real Android rendering, touch interaction, previews, and truthful metadata.
 
-**Privacy boundary:** The current `/demo/` files are generic public-safe fixtures. Canonical/private character manifests, GLBs, previews, references, and metadata must never be deployed as static public Pages assets.
+**Privacy boundary:** `/demo/` is generic public-safe only. Canonical/private character manifests, GLBs, previews, references, and metadata must never be deployed as static public Pages assets.
 
 ## P3 — VPS Control Plane
 
@@ -76,9 +74,15 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 - [ ] P3.5 Establish GitHub Actions deployment as the normal update path.
 - [ ] P3.6 Remove Bamboo from the normal operational workflow.
 
-**P3.1 contract:** `docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines a public viewer/private VPS split with no database or account system. Initial endpoints are unauthenticated `GET /health`, bearer-authenticated private build status and viewer-session creation, and read-only temporary `/s/{session_id}/{asset}` delivery for only GLB, build-result JSON, front PNG, and three-quarter PNG. Viewer sessions use high-entropy server-side IDs, default 2-hour TTL, 24-hour hard maximum, `no-store`/`no-referrer` headers, and CORS limited to `https://forge.drthorne.uk`. Long-lived control credentials never appear in viewer URLs.
+**P3.1 contract:** `docs/PRIVATE_ASSET_CONTROL_PLANE.md` defines the public viewer/private VPS split. `control-plane/server.py` implements the first stdlib-only service: public `/health`, bearer-authenticated private build status + viewer-session creation, and temporary read-only `/s/{session_id}/{asset}` delivery limited to GLB, build-result JSON, front PNG, and three-quarter PNG. Session IDs are high entropy; control credentials never enter viewer URLs.
 
-**VPS operating rule:** Manual/Termux/Bamboo access is permitted only for one-time bootstrap, connection establishment, secret installation, or emergency repair. Once the VPS deployment connection is established, normal updates must flow from GitHub Actions to the VPS. Do not make recurring production operation depend on manual Termux commands or Bamboo.
+**P3 pre-VPS proof:** Control Plane Smoke run `32880493854` on commit `ee820642393a68f968ee79af85720e424eed71bd` passed Python syntax, health, bearer authorization, temporary session creation, and protected asset retrieval using an isolated runner-local root.
+
+**VPS survey:** Ubuntu 24.04.4 LTS x86_64; Python 3.12.3; Node 22.22.1; systemd operational though degraded; `cloudflared` already active for unrelated services; no nginx/Caddy/Apache; `/srv/ianeo-spatial-forge` absent and safe to create; existing deploy user `eidolon-deploy`; dedicated runtime user `spatialforge` absent; `127.0.0.1:18792` selected as the project-local listener. Existing `/srv/eidolon` and unrelated exposed container ports must not be touched.
+
+**P3.2 bootstrap design:** `deploy/bootstrap-vps.sh` creates only the dedicated runtime boundary: `spatialforge` service user, `/srv/ianeo-spatial-forge/{app,private/builds,private/sessions,state}`, a locally generated non-printed `SF_CONTROL_TOKEN`, systemd unit on `127.0.0.1:18792`, and narrowly scoped restart/status sudo rules for `eidolon-deploy`. It does not install packages, start the service, modify existing tunnels, or touch unrelated services.
+
+**VPS operating rule:** Manual/Termux/Bamboo access is permitted only for one-time bootstrap, connection establishment, secret installation, or emergency repair. Once the deployment connection is established, normal updates must flow from GitHub Actions to the VPS.
 
 ## P4 — Telegram Delivery + Mini App
 
