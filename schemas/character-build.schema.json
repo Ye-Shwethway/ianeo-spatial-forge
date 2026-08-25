@@ -2,53 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:ianeo-spatial-forge:schema:character-build:1.0",
   "title": "IANEO Spatial Forge Character Build Manifest",
-  "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements. Optional requested_measurements preserve exact user intent separately from engine controls.",
+  "description": "Minimal public-safe input manifest for a reproducible generic MPFB character build. Numeric phenotype fields are MPFB macro controls, not exact real-world measurements. Optional requested_measurements preserve exact user intent separately from engine controls. Optional revision metadata declares a parent version and locks only proven phenotype controls.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "character_id",
-    "version",
-    "generator",
-    "phenotype"
-  ],
+  "required": ["schema_version", "character_id", "version", "generator", "phenotype"],
   "properties": {
-    "schema_version": {
-      "type": "string",
-      "const": "1.0"
-    },
+    "schema_version": {"type": "string", "const": "1.0"},
     "character_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 80,
       "pattern": "^[a-z0-9]+(?:[a-z0-9._-]*[a-z0-9])?$"
     },
-    "version": {
-      "type": "integer",
-      "minimum": 1
-    },
+    "version": {"type": "integer", "minimum": 1},
     "generator": {
       "type": "object",
       "additionalProperties": false,
       "required": ["engine"],
-      "properties": {
-        "engine": {
-          "type": "string",
-          "const": "mpfb"
-        }
-      }
+      "properties": {"engine": {"type": "string", "const": "mpfb"}}
     },
     "phenotype": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "gender",
-        "age",
-        "muscle",
-        "weight",
-        "height",
-        "proportions"
-      ],
+      "required": ["gender", "age", "muscle", "weight", "height", "proportions"],
       "properties": {
         "gender": {"$ref": "#/$defs/macroControl"},
         "age": {"$ref": "#/$defs/macroControl"},
@@ -58,27 +34,40 @@
         "proportions": {"$ref": "#/$defs/macroControl"}
       }
     },
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_version", "locked_fields"],
+      "properties": {
+        "parent_version": {"type": "integer", "minimum": 1},
+        "locked_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "phenotype.gender",
+              "phenotype.age",
+              "phenotype.muscle",
+              "phenotype.weight",
+              "phenotype.height",
+              "phenotype.proportions"
+            ]
+          }
+        }
+      }
+    },
     "requested_measurements": {
       "type": "array",
-      "description": "Exact real-world measurement intent kept separate from MPFB macro controls. P2.4 reports these as unsupported unless a future proven mapping exists.",
+      "description": "Exact real-world measurement intent kept separate from MPFB macro controls. These remain unsupported unless a future proven mapping exists.",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": ["field", "value", "unit"],
         "properties": {
-          "field": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 80,
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "value": {
-            "type": "number"
-          },
-          "unit": {
-            "type": "string",
-            "enum": ["cm", "in", "kg", "lb", "percent"]
-          }
+          "field": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-z][a-z0-9_]*$"},
+          "value": {"type": "number"},
+          "unit": {"type": "string", "enum": ["cm", "in", "kg", "lb", "percent"]}
         }
       },
       "default": []
