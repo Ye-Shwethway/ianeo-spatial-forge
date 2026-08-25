@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://drthorne.uk/schemas/ianeo-spatial-forge/build-result.schema.json",
+  "$id": "urn:ianeo-spatial-forge:schema:build-result:1.0",
   "title": "IANEO Spatial Forge Build Result",
   "description": "Machine-readable metadata emitted by a Spatial Forge character build. Structural facts are recorded separately from visual evidence and visual judgment.",
   "type": "object",
