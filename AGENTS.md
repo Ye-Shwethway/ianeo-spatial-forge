@@ -7,12 +7,13 @@ This repository is built in small, runtime-verified slices. Prefer the simplest 
 ## Core Rules
 
 1. Read `ROADMAP.md`, `IMPLEMENTATION_PLAN.md`, and `NEW_CHAT_BOOTSTRAP.md` before changing implementation.
-2. Work only on the current unchecked slice unless a prerequisite is genuinely missing.
-3. Keep code and folder structure obvious to a human reader.
-4. Avoid speculative abstraction, generic frameworks, large guard layers, and test matrices that slow iteration without protecting a demonstrated failure mode.
-5. Use meaningful smoke/integration checks that verify real outputs.
-6. Never mark a slice complete from static reasoning alone when it has a runtime success criterion.
-7. After a slice passes, update implementation status and the new-chat handoff before advancing.
+2. For Blender, MPFB, character, scene, GLB, rigging, rendering, or 3D validation work, read `skills/spatial-forge-3d/SKILL.md` and only the routed references needed for the task.
+3. Work only on the current unchecked slice unless a prerequisite is genuinely missing.
+4. Keep code and folder structure obvious to a human reader.
+5. Avoid speculative abstraction, generic frameworks, large guard layers, and test matrices that slow iteration without protecting a demonstrated failure mode.
+6. Use meaningful smoke/integration checks that verify real outputs.
+7. Never mark a slice complete from static reasoning alone when it has a runtime success criterion.
+8. After a slice passes, update implementation status and the new-chat handoff before advancing.
 
 ## Zero-Cost Constraint
 
@@ -32,22 +33,32 @@ Never commit:
 - private generated meshes, textures, renders, or scene assets
 - persistent user data
 
-Use repository/environment secrets only when later slices genuinely require them. Early P0/P1 work should use no secrets.
+Use repository/environment secrets only when later slices genuinely require them. Early P0/P1/P2 work should use no secrets.
 
 ## 3D Pipeline Rules
 
 - Blender should be used headlessly in production automation.
+- The proven baseline is Blender `4.5.12 LTS` with MPFB `2.0.17` for current human-generation work. Do not upgrade simply because an external skill uses a newer version.
 - Pin important tool versions once a combination is proven.
 - Prefer GLB/glTF for phone/runtime inspection unless a slice explicitly needs another format.
-- Keep previews lightweight.
-- Never report unsupported character precision as if the engine reproduced exact anthropometric values. Record approximations and unsupported controls explicitly.
+- Keep previews lightweight and comparable across revisions.
+- Prefer deterministic manifests + Blender Python as durable source when the generated asset can be reproducibly rebuilt.
+- Never report unsupported character precision as if the engine reproduced exact anthropometric values. Record real controls, approximations, and unsupported fields explicitly.
 - Generic test characters must remain non-canonical and non-private.
+- Structural validation and visual validation are separate gates. Metrics do not replace visual inspection.
+- When GLB is the deliverable, inspect the exported artifact and fresh-import it when that meaningfully tests the claim.
 
 ## Compute Policy
 
 GitHub Actions is the normal build/automation compute path after the foundation is proven. Do not turn the VPS into a heavy render farm. The VPS should eventually coordinate jobs, temporary private assets, auth, and delivery.
 
 Do not use GitHub Actions as a bulk animation/render farm. Keep jobs aligned with build, export, validation, and lightweight preview workflows.
+
+## MCP Policy
+
+Do not introduce MCP during early implementation just to operate Blender or the build pipeline. The development and verification workflow still benefits from built-in repository/connectors, and custom MCP sessions may not expose those built-in connectors.
+
+First establish the build pipeline, manifests, validation semantics, VPS control plane, and phone delivery independently. MCP is a later narrow external control adapter that lets IANEO operate already-proven backend operations. It must not dictate core schemas, file formats, generation scripts, or validation rules.
 
 ## Bamboo Policy
 
@@ -61,12 +72,14 @@ Favor:
 - format/import validation where cheap and meaningful
 - one or two representative end-to-end smoke paths
 - actual artifact inspection
+- fixed low-cost multiview evidence when visual comparison matters
 
 Avoid by default:
 - exhaustive unit tests for glue code
 - large fixture suites
 - duplicate guards across layers
 - slow visual regression systems during early POC stages
+- rendering after every tiny adjustment
 
 Add a stronger test only when a real regression or risk justifies it.
 
@@ -81,8 +94,9 @@ For a runtime-backed slice, use the smallest relevant portion of this loop:
 4. if successful, fetch the artifact list
 5. download the relevant artifact when output inspection matters
 6. inspect filenames, non-zero sizes, and format/content as appropriate
-7. visually inspect generated previews when the slice makes a visual claim
-8. only then mark the runtime slice complete and sync docs
+7. fresh-import exported 3D assets when that tests downstream correctness
+8. visually inspect generated previews when the slice makes a visual claim
+9. only then mark the runtime slice complete and sync docs
 
 A green workflow icon alone is not proof of correct output.
 
@@ -91,5 +105,6 @@ A green workflow icon alone is not proof of correct output.
 `IMPLEMENTATION_PLAN.md` is the slice checklist.
 `ROADMAP.md` is the high-level direction and phase boundaries.
 `NEW_CHAT_BOOTSTRAP.md` is the exact handoff for another chat/agent.
+`skills/spatial-forge-3d/SKILL.md` is the project-specific 3D creation/validation intelligence router.
 
-Keep all three synchronized with real runtime state. Documentation must never claim a workflow passes when the latest inspected run fails.
+Keep all of them synchronized with real runtime state. Documentation must never claim a workflow passes when the latest inspected run fails.
