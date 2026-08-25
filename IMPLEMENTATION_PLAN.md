@@ -51,7 +51,7 @@ Work one slice at a time. A slice is complete only when its runtime result has b
 
 **P2 workflow intelligence:** `skills/spatial-forge-3d/SKILL.md` is the routing layer for Blender/MPFB/3D work. Its references define the smallest-build contract, deterministic manifest/Python source rule, fixed visual evidence, structural-vs-visual gates, GLB fresh-import validation when relevant, and Blender/MPFB reference hierarchy. The proven baseline remains Blender `4.5.12 LTS` + MPFB `2.0.17`; external skills are methodology references, not runtime dependencies.
 
-**P2.1–P2.3 runtime proof:** `schemas/character-build.schema.json` and `schemas/build-result.schema.json` passed Draft 2020-12 static validation. `fixtures/generic-character-v1.json` contains only the six runtime-proven normalized MPFB controls: gender, age, muscle, weight, height, and proportions. Character Manifest Proof run `32864360900` on commit `53c5e16bb68a4b588409cb524c0904fbb324225a` passed every step. The inspected artifact reported Blender `4.5.12 LTS`, MPFB `2.0.17`, exactly the six requested applied controls, 1 GLB mesh definition, 1 skin, and 53 joints. Front and three-quarter previews were visually inspected and showed the expected generic human. A separate clean-Blender fresh import of `generic-character-v1.glb` succeeded with 2 imported mesh objects, 1 armature, and 53 bones. The manifest builder asserts `mpfb.VERSION == 2.0.17`, so extension drift now fails visibly instead of silently changing the proven runtime.
+**P2.1–P2.3 runtime proof:** `schemas/character-build.schema.json` and `schemas/build-result.schema.json` passed Draft 2020-12 static validation. `fixtures/generic-character-v1.json` contains only the six runtime-proven normalized MPFB controls: gender, age, muscle, weight, height, and proportions. Character Manifest Proof run `32864360900` on commit `53c5e16bb68a4b588409cb524c0904fbb324225a` passed every step. The inspected artifact reported Blender `4.5.12 LTS`, MPFB `2.0.17`, exactly the six requested applied controls, 1 GLB mesh definition, 1 skin, and 53 joints. Front and three-quarter previews were visually inspected and showed the expected generic human. A separate clean-Blender fresh import of `generic-character-v1.glb` succeeded with 2 mesh objects, 1 armature, and 53 bones. The manifest builder asserts `mpfb.VERSION == 2.0.17`, so extension drift now fails visibly instead of silently changing the proven runtime.
 
 **P2.4 runtime proof:** Character Manifest Proof run `32864975879` on commit `595bcb5b9768d1f341fac93c803237a0029f3f39` completed successfully. The downloaded artifact preserved the requested `chest_circumference = 110 cm` only in `unsupported_fields`, with a clear reason that MPFB `2.0.17` has no proven direct control guaranteeing that exact real-world measurement. `applied_controls` still contained only the six proven MPFB macros. The build produced a valid GLB with 1 mesh definition, 1 skin, and 53 joints; clean fresh import succeeded with 2 mesh objects, 1 armature, and 53 joints. This proves unsupported exact measurements are reported rather than silently fabricated.
 
@@ -63,11 +63,15 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 - [ ] P2V.2 Load a GLB from an explicit URL and support rotate/zoom/reset on phone.
 - [ ] P2V.3 Display optional front and three-quarter preview URLs.
 - [ ] P2V.4 Load and render `build-result.json` metadata including unsupported fields truthfully.
-- [ ] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
+- [x] P2V.5 Define the minimal build asset URL contract without adding a database or account system.
 - [ ] P2V.6 Establish a static deployment path suitable for `forge.drthorne.uk`.
 - [ ] P2V.7 Verify the viewer from an Android browser with a real generic Spatial Forge GLB.
 
 **P2V.1 runtime proof:** `viewer/index.html`, `viewer/app.js`, `viewer/styles.css`, and `viewer/README.md` now define a framework-free, stateless mobile viewer. `@google/model-viewer` is explicitly pinned to `4.3.1`. Viewer Smoke run `32866763601` on commit `580048d40ec5189317a30698305faa4956b45514` completed successfully: the workflow served `viewer/` through a local HTTP server and fetched/verified the HTML, JavaScript, CSS, pinned viewer dependency reference, and URL-driven app wiring. This proves the static shell is serveable; real GLB rendering/touch behavior remains P2V.2/P2V.7 and is not yet claimed.
+
+**P2V.5 contract:** `viewer/README.md` defines a stateless explicit URL contract: `model`, `meta`, `front`, `threeQuarter`, and `title`. The asset host must permit browser access/CORS. The viewer owns no database, account, build registry, or storage.
+
+**P2V.6 hosting foundation (in progress):** Cloudflare Pages project `ianeo-spatial-forge` exists with production branch `main`, framework none, root directory `viewer`, empty build command, output directory `.`, and build caching disabled. Custom domain `forge.drthorne.uk` is attached with one proxied CNAME to `ianeo-spatial-forge.pages.dev`. No Worker, D1, KV, R2, Tunnel, or other service was created. There is no deployment yet because GitHub source binding is still pending, so P2V.6 is not complete and HTTPS/runtime is not yet claimed.
 
 **Viewer boundary:** The initial viewer is static and must not require the VPS merely to render a model. The VPS becomes the later protected/private asset and control backend. Prefer a small web component/vanilla JavaScript implementation over a large SPA framework. Keep the viewer compatible with later Telegram Mini App embedding.
 
@@ -129,6 +133,7 @@ Reason: the Creator currently needs a phone-first inspection surface before the 
 - Never introduce a paid dependency without explicit Creator approval.
 - Keep production path simple; avoid broad test matrices and speculative guards.
 - Read `skills/spatial-forge-3d/SKILL.md` for Blender/MPFB/3D creation or validation work.
+- Read `skills/spatial-forge-ui/SKILL.md` for web, Telegram Mini App, Flutter, layout, visual-system, interaction, or accessibility work.
 - Do not claim a slice passed until its actual runtime output has been inspected.
 - For Actions-backed slices, verify in this order when available: workflow run → jobs/steps → failed job logs → artifact list → downloaded artifact contents → fresh-import validation when relevant → visual output inspection.
 - Issues are for durable project discussion/tracking, not a required mechanism for checking workflow state.
