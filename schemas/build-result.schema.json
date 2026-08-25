@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://drthorne.uk/schemas/ianeo-spatial-forge/build-result.schema.json",
+  "title": "IANEO Spatial Forge Build Result",
+  "description": "Machine-readable metadata emitted by a Spatial Forge character build. Structural facts are recorded separately from visual evidence and visual judgment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "character_id",
+    "version",
+    "status",
+    "runtime",
+    "applied_controls",
+    "outputs",
+    "structural"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "character_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed"]
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blender", "mpfb"],
+      "properties": {
+        "blender": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mpfb": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "applied_controls": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "unsupported_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "reason"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "default": []
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "bytes"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["blend", "glb", "preview", "metadata"]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "structural": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mesh_count", "skin_count", "joint_count"],
+      "properties": {
+        "mesh_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skin_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "joint_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "visual_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": []
+    }
+  }
+}
