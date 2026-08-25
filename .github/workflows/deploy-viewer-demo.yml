@@ -1,6 +1,11 @@
 name: Deploy Proven Generic Viewer Demo
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-viewer-demo.yml"
   workflow_dispatch:
 
 permissions:
