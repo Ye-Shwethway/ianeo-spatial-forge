@@ -30,18 +30,19 @@ jobs:
       - name: Configure pinned SSH identity
         shell: bash
         env:
-          VPS_SSH_KEY: ${{ secrets.SPATIALFORGE_VPS_SSH_KEY }}
+          VPS_SSH_KEY_B64: ${{ secrets.SPATIALFORGE_VPS_SSH_KEY_B64 }}
           VPS_KNOWN_HOSTS: ${{ secrets.SPATIALFORGE_VPS_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
           test -n "$VPS_HOST"
           test -n "$VPS_PORT"
           test -n "$VPS_USER"
-          test -n "$VPS_SSH_KEY"
+          test -n "$VPS_SSH_KEY_B64"
           test -n "$VPS_KNOWN_HOSTS"
           install -d -m 0700 "$HOME/.ssh"
-          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s' "$VPS_SSH_KEY_B64" | base64 --decode > "$HOME/.ssh/id_ed25519"
           chmod 0600 "$HOME/.ssh/id_ed25519"
+          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" >/dev/null
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 0600 "$HOME/.ssh/known_hosts"
 
