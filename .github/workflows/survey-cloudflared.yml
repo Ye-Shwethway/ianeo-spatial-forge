@@ -1,0 +1,77 @@
+name: Survey VPS Cloudflared
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/survey-cloudflared.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      VPS_HOST: ${{ secrets.SPATIALFORGE_VPS_HOST }}
+      VPS_PORT: ${{ secrets.SPATIALFORGE_VPS_PORT }}
+      VPS_USER: ${{ secrets.SPATIALFORGE_VPS_USER }}
+
+    steps:
+      - name: Configure pinned SSH identity
+        shell: bash
+        env:
+          VPS_SSH_KEY_B64: ${{ secrets.SPATIALFORGE_VPS_SSH_KEY_B64 }}
+          VPS_KNOWN_HOSTS: ${{ secrets.SPATIALFORGE_VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s' "$VPS_SSH_KEY_B64" | tr -d '[:space:]' | base64 --decode > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" >/dev/null
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+      - name: Read-only sanitized cloudflared survey
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          echo "cloudflared_version=$(cloudflared --version 2>/dev/null | head -n1 || echo unavailable)"
+          echo "cloudflared_active=$(systemctl is-active cloudflared.service 2>/dev/null || true)"
+          echo "cloudflared_enabled=$(systemctl is-enabled cloudflared.service 2>/dev/null || true)"
+          echo "unit_fragment=$(systemctl show cloudflared.service -p FragmentPath --value 2>/dev/null || true)"
+          echo "--- config files (names/modes only) ---"
+          if test -d /etc/cloudflared; then
+            find /etc/cloudflared -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' -o -name 'config*' \) -printf '%M %u:%g %p\n' 2>/dev/null | sort || true
+          else
+            echo "/etc/cloudflared missing"
+          fi
+          echo "--- sanitized readable ingress ---"
+          found=0
+          if test -d /etc/cloudflared; then
+            while IFS= read -r f; do
+              test -n "$f" || continue
+              if test -r "$f"; then
+                found=1
+                echo "FILE $f"
+                awk '
+                  /^[[:space:]]*hostname:[[:space:]]*/ {print}
+                  /^[[:space:]]*service:[[:space:]]*/ {print}
+                ' "$f"
+              fi
+            done < <(find /etc/cloudflared -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' -o -name 'config*' \) 2>/dev/null | sort)
+          fi
+          if test "$found" = 0; then
+            echo "No readable cloudflared config for deploy user."
+          fi
+          echo "--- relevant local listeners ---"
+          ss -ltnH 2>/dev/null | awk '$4 ~ /127\.0\.0\.1:(18792|20241)$/ {print $4}' | sort -u || true
+          REMOTE
