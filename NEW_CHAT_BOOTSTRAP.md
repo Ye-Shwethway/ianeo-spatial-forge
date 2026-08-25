@@ -21,15 +21,16 @@ MCP is intentionally deferred until the backend and delivery path are independen
 - Proven 3D baseline: Blender `4.5.12 LTS` + MPFB `2.0.17`.
 - `skills/spatial-forge-3d/SKILL.md` is the 3D creation/validation router.
 - `skills/spatial-forge-ui/SKILL.md` is the UI/UX router for web, Telegram Mini App, and future Flutter work.
-- Phone inspection is deliberately pulled forward as P2V before P2.5/P2.6.
 - The viewer is framework-free/static, URL-driven, and uses pinned `@google/model-viewer` `4.3.1`.
 - Cloudflare native Git integration was abandoned after repeated failures. Do not retry it unless explicitly requested.
 - Canonical viewer deployment is **GitHub Actions → Wrangler → Cloudflare Pages Direct Upload**.
 - Cloudflare Pages project: `ianeo-spatial-forge`.
 - Live URLs: `https://ianeo-spatial-forge.pages.dev/` and `https://forge.drthorne.uk/`.
 - VPS later provides protected/private build assets and control APIs, not viewer rendering.
+- Canonical/private GLBs, previews, manifests, references, and metadata must never be deployed as plain public Pages files.
 - Telegram will later open the same web viewer rather than requiring a second implementation.
 - Flutter remains optional later; MCP remains late-stage only.
+- VPS bootstrap/manual access is one-time only. Termux or Bamboo may establish the connection, directories, service user, and secrets or perform emergency repair. After the deployment connection exists, normal VPS updates must come from GitHub Actions.
 
 ## Proven Runtime State
 
@@ -45,66 +46,44 @@ Run `32864360900`; exact six normalized MPFB controls applied; clean fresh impor
 ### P2.4 — PASS
 Run `32864975879`; exact `chest_circumference = 110 cm` preserved in `unsupported_fields` and not fabricated as an engine control.
 
-### P2V.1 — PASS
-Viewer Smoke run `32866763601` passed serving/fetch verification for the static shell and pinned viewer dependency.
+### P2V — PASS
+Viewer Smoke run `32866763601` proved the static shell. Direct Upload runs `32876020417` and `32876094428` proved the production deploy path and HTTPS on both Pages/custom-domain URLs. Generic demo run `32876486511` reused the proven P2.4 artifact, deployed browser-accessible generic assets, and verified the live JSON, GLB, preview, and viewer URL.
 
-### P2V.5 — PASS
-`viewer/README.md` defines stateless URL inputs: `model`, `meta`, `front`, `threeQuarter`, `title`.
+The Creator then verified the real demo on Android: the GLB rendered, touch interaction worked, front and three-quarter previews displayed, and build details correctly showed Blender `4.5.12 LTS`, MPFB `2.0.17`, six applied controls, 53 joints, and the unsupported `chest_circumference = 110 cm` request/reason.
 
-### P2V.6 — PASS
-Workflow: `.github/workflows/deploy-pages.yml`
-
-First successful deployment:
-- commit `4901727e1b72a29ba5ec2692afdbf3da8cf85d39`
-- run `32876020417`
-
-Live-URL verification:
-- commit `411036bcf9e57cd5faec4ee69fa32725ec2e7bce`
-- run `32876094428`
-- deploy PASS
-- HTTPS/content PASS for both Pages and custom-domain URLs
-
-No Worker, D1, KV, R2, Tunnel, database, or unrelated Cloudflare resource was added.
-
-### Real Generic Viewer Demo — LIVE, ANDROID CONFIRMATION PENDING
-
-Workflow: `.github/workflows/deploy-viewer-demo.yml`
-
-The workflow intentionally reuses the already-proven P2.4 artifact instead of re-running Blender. It stages these generic public-safe assets under `viewer/demo/` at runtime and Direct Upload deploys them without committing the binaries:
-- `generic-unsupported-v1.glb`
-- `front.png`
-- `three-quarter.png`
-- `build-result.json`
-
-Successful proof:
-- commit `f3ebe566d26fa1bdaff2ba6287261a4f0d2778e0`
-- run `32876486511`
-- artifact download PASS
-- staged metadata assertions PASS
-- Wrangler Pages deployment PASS
-- live `build-result.json` PASS
-- live GLB download PASS and >8 MB
-- live preview PNG PASS
-- live viewer URL PASS
-
-First real demo URL:
-`https://forge.drthorne.uk/?model=/demo/generic-unsupported-v1.glb&meta=/demo/build-result.json&front=/demo/front.png&threeQuarter=/demo/three-quarter.png&title=Generic%20Character%20P2.4`
+The `/demo/` files are generic public-safe only. They are not a pattern for canonical/private asset delivery.
 
 ## Current Slice
 
-### P2V.2 / P2V.3 / P2V.4 / P2V.7 — Android Viewer Confirmation
+### P2.5 / P2.6 — Scoped Revision Proof
 
-The real generic assets are live and browser-accessible. The Creator should open the demo URL on Android and confirm:
-1. the real GLB visibly renders
-2. drag rotates the model
-3. pinch zoom works
-4. Reset view works
-5. front and three-quarter previews are visible
-6. build metadata renders, including Blender `4.5.12 LTS`, MPFB `2.0.17`, six applied controls, structural counts, and the unsupported `chest_circumference = 110 cm` request/reason
+Implemented foundation:
+- character manifest schema now accepts optional `revision`
+- `revision.parent_version` identifies the parent manifest version
+- `revision.locked_fields` is deliberately limited to the six proven `phenotype.*` controls rather than arbitrary paths
+- `scripts/build_character.py` requires `SF_PARENT_MANIFEST` for a revision
+- builder rejects wrong character, wrong parent version, non-increasing version, and any locked-field drift before generation
+- build-result metadata records the enforced revision relationship
+- `fixtures/generic-character-v2.json` changes only `muscle` from `0.72` to `0.52` and locks gender, age, weight, height, and proportions
+- `.github/workflows/character-revision.yml` builds v1 and v2, compares applied controls, fresh-imports v2, and uploads both versions for inspection
 
-Do not mark P2V.2/P2V.3/P2V.4/P2V.7 complete until the actual phone behavior is confirmed. HTTP/file verification alone is not a visual/touch proof.
+Current runtime proof run:
+- workflow: `Character Revision Proof`
+- run ID: `32877860898`
+- commit: `137dafa67823894a1dfc95d3aa96370996d3739b`
 
-After Android confirmation, sync docs and return to P2.5 version/lock semantics and P2.6 two-revision proof, then proceed toward protected VPS asset delivery and Telegram.
+Do not mark P2.5/P2.6 complete until this run finishes successfully and the uploaded revision artifact/previews are inspected. If it fails, repair only the concrete failure.
+
+After P2.5/P2.6 pass, begin P3 with the smallest private asset/control contract. Do not put Darian/private canon into the public repo or static Pages deployment.
+
+## VPS Manual/Automation Boundary
+
+When P3 reaches the VPS:
+1. IANEO should prepare the exact bootstrap requirements first.
+2. If a secret or initial connection must be installed manually, provide the Creator one minimal one-shot Termux command or a narrowly scoped Bamboo instruction.
+3. Never ask the Creator to paste secret values into chat.
+4. Once GitHub Actions can reach the VPS, use Actions for routine deploy/update/verification.
+5. Bamboo remains bootstrap/emergency-only and must not become the runtime orchestrator.
 
 ## Working Rules
 
