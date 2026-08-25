@@ -4,11 +4,11 @@ IANEO Spatial Forge is a zero-incremental-cost, agent-operated 3D creation pipel
 
 The development/verification model is:
 
-**Creator → ChatGPT / IANEO → GitHub + proven automation → Spatial Forge artifacts + previews**
+**Creator → ChatGPT / IANEO → GitHub + proven automation → Spatial Forge artifacts + previews → mobile web viewer**
 
 After the backend, control plane, and phone delivery path are independently established, a narrow external MCP adapter may expose those proven operations to an IANEO session:
 
-**External IANEO session → MCP → proven Spatial Forge backend → Telegram / Mini App**
+**External IANEO session → MCP → proven Spatial Forge backend → Telegram / web viewer / Mini App**
 
 MCP is therefore a late control surface, not an early core dependency.
 
@@ -23,9 +23,29 @@ Prove the smallest useful pipeline first:
 3. Export a `.glb` asset.
 4. Produce lightweight preview imagery.
 5. Establish a truthful versioned character manifest and revision workflow.
-6. Deliver build artifacts for inspection from a phone.
+6. Give the Creator an immediate phone-first web viewer for real GLB/preview/metadata inspection.
+7. Add the VPS as a protected asset/control backend.
+8. Add Telegram delivery and reuse the web viewer as the Mini App/web-view surface.
+9. Add MCP only after the underlying operations are independently proven.
 
-Only after that foundation passes do we add VPS orchestration, Telegram delivery / Mini App viewing, and finally MCP control.
+The phone viewer is deliberately pulled forward before the remaining revision work because immediate visual inspection is more useful than continuing blind backend development.
+
+## Viewer Direction
+
+The initial viewer is intentionally small:
+
+- framework-free static HTML/CSS/JavaScript
+- GLB loaded from an explicit URL
+- touch rotate/zoom and camera reset
+- optional front and three-quarter preview images
+- `build-result.json` metadata display
+- no database or account system
+- no VPS requirement merely to render a model
+- compatible with later Telegram Mini App embedding
+
+Preferred future hostname: `forge.drthorne.uk`.
+
+Cloudflare Pages is the preferred static hosting target once connected. The VPS will later serve protected/private build assets and control APIs rather than running the viewer rendering engine.
 
 ## Architecture Principles
 
@@ -35,7 +55,7 @@ Only after that foundation passes do we add VPS orchestration, Telegram delivery
 - **3D-aware agent workflow.** `skills/spatial-forge-3d/SKILL.md` routes Blender/MPFB creation and validation work through reproducible generation, truthful precision, scoped revisions, export checks, and fixed visual evidence.
 - **Small verified slices.** Finish, run, inspect, document, then move to the next slice.
 - **No over-engineering.** Add safeguards and tests only when they protect a real failure mode.
-- **Private universe data stays private.** This public repository contains engine code, schemas, workflows, skills, and non-sensitive test fixtures only.
+- **Private universe data stays private.** This public repository contains engine code, schemas, workflows, skills, viewer code, and non-sensitive test fixtures only.
 - **MCP is late-stage only.** Do not sacrifice built-in connector access or shape the core backend around MCP during implementation.
 - **Bamboo is bootstrap-only.** Any temporary VPS setup performed through Bamboo must not become a permanent runtime dependency.
 - **GitHub Actions becomes the normal automation path once the foundation is ready.**
