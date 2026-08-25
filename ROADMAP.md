@@ -6,7 +6,13 @@ Build a zero-incremental-cost, phone-first 3D creation system that IANEO can ope
 
 ## Target Interaction
 
-**Creator → IANEO → MCP → Spatial Forge → preview / GLB / scene assets**
+During development and verification:
+
+**Creator → IANEO → built-in repository/connectors + proven automation → Spatial Forge → preview / GLB / scene assets**
+
+After the underlying backend, control plane, and phone delivery are independently established:
+
+**External IANEO session → MCP → proven Spatial Forge backend → Telegram / Mini App**
 
 Telegram is the notification and delivery surface. A Telegram Mini App is the first interactive 3D inspection surface. A dedicated Flutter client is optional later, only if the Mini App proves insufficient.
 
@@ -32,13 +38,16 @@ Success:
 
 ## Phase P2 — Character Manifest
 
-Goal: establish a small canonical input format without building a huge character system.
+Goal: establish a small canonical input format without building a huge character system, guided by the local `spatial-forge-3d` creation/validation skill.
 
 Success:
-- JSON manifest identifies a character and version.
-- Supported body/face parameters map predictably to generation controls.
-- Build metadata records engine/tool versions and outputs.
-- Feature-lock semantics can express changes such as `face-only` without silently modifying approved body settings.
+- agent workflow intelligence is documented for reproducible creation, truthful precision, validation, and scoped revisions
+- JSON manifest identifies a character and version
+- supported body/face parameters map predictably to real generation controls
+- unsupported or approximate precision is reported explicitly
+- build metadata records engine/tool versions and outputs
+- feature-lock semantics can express changes such as `face-only` without silently modifying approved body settings
+- two generic revisions prove intended change plus lock preservation
 
 ## Phase P3 — VPS Control Plane
 
@@ -55,17 +64,24 @@ Bamboo may be used once to bootstrap the VPS foundation. It is not a runtime dep
 
 ## Phase P4 — Telegram Delivery + Mini App Viewer
 
-Goal: make the full loop usable from a phone.
+Goal: make the full loop usable from a phone before adding MCP.
 
 Success:
-- Telegram bot sends build completion/status and preview.
-- `Open 3D` opens a Mini App viewer.
-- Viewer loads GLB, supports rotate/zoom, and exposes metadata/download actions.
-- Private assets are not exposed as permanent public URLs.
+- Telegram bot sends build completion/status and preview
+- `Open 3D` opens a Mini App viewer
+- viewer loads GLB, supports rotate/zoom, and exposes metadata/download actions
+- private assets are not exposed as permanent public URLs
+- Android phone end-to-end delivery/inspection works without MCP
 
-## Phase P5 — MCP Control
+## Phase P5 — MCP External Control
 
-Goal: let IANEO operate the system through narrow, explicit tools.
+Goal: expose already-proven Spatial Forge backend operations to an external IANEO session through a narrow MCP adapter without making MCP a core backend dependency.
+
+Entry gate:
+- P2 manifest/revision semantics proven
+- P3 control plane proven
+- P4 phone delivery proven independently of MCP
+- development/verification does not need to sacrifice built-in connector access
 
 Initial tool family may include:
 - `create_character`
@@ -75,7 +91,7 @@ Initial tool family may include:
 - `list_assets`
 - `request_revision`
 
-Do not create a large tool surface before the underlying pipeline is proven.
+Start with read/status operations, then add narrow build/create operations. Do not create a large tool surface before the underlying operations are proven. MCP must not determine core schemas, file formats, generation scripts, or validation semantics.
 
 ## Phase P6 — Revision and Canon Workflow
 
@@ -106,6 +122,7 @@ Build only if the Telegram Mini App is no longer sufficient. Possible future fun
 
 ## Non-Goals for Early Phases
 
+- MCP-driven Blender control during early implementation
 - photorealistic render-farm workloads
 - high-end sculpting from scratch
 - complex cloth/hair simulation
@@ -113,6 +130,10 @@ Build only if the Telegram Mini App is no longer sufficient. Possible future fun
 - premature distributed architecture
 - paid AI 3D APIs
 - storing private character canon in this public repository
+
+## 3D Creation Intelligence Rule
+
+For Blender, MPFB, character, scene, rigging, GLB, rendering, or 3D validation work, read `skills/spatial-forge-3d/SKILL.md` and its routed references. External Blender-agent skills are methodology sources only; the project keeps its own proven runtime and minimal workflow.
 
 ## Documentation Rule
 
