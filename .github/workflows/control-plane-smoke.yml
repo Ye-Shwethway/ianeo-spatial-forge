@@ -33,8 +33,6 @@ jobs:
           printf '{"character_id":"generic-private-test","status":"success"}\n' > "$ROOT/private/builds/test-build/build-result.json"
           printf 'png' > "$ROOT/private/builds/test-build/front.png"
           printf 'png' > "$ROOT/private/builds/test-build/three-quarter.png"
-
-          # Seed one already-expired session. The service should remove it proactively.
           printf '{"build_id":"test-build","expires_at":1}\n' > "$ROOT/private/sessions/expired.json"
 
           SF_ROOT="$ROOT" \
@@ -88,11 +86,11 @@ jobs:
           curl -fsS -D /tmp/headers.txt "http://127.0.0.1:18792${MODEL_PATH}" -o /tmp/model.glb
           test "$(cat /tmp/model.glb)" = "fake-glb"
           grep -qi '^Access-Control-Allow-Origin: https://forge.drthorne.uk' /tmp/headers.txt
+          grep -qi '^Access-Control-Allow-Credentials: true' /tmp/headers.txt
           grep -qi '^Cache-Control: private, no-store' /tmp/headers.txt
           grep -qi '^Referrer-Policy: no-referrer' /tmp/headers.txt
           grep -qi '^X-Content-Type-Options: nosniff' /tmp/headers.txt
 
-          # Expired capability is 404 and removed.
           EXPIRED_ID='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
           printf '{"build_id":"test-build","expires_at":1}\n' > "$ROOT/private/sessions/${EXPIRED_ID}.json"
           test "$(curl -sS -o /tmp/expired -w '%{http_code}' "http://127.0.0.1:18792/s/${EXPIRED_ID}/model.glb")" = "404"
