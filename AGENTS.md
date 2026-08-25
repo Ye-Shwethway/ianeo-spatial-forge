@@ -8,12 +8,13 @@ This repository is built in small, runtime-verified slices. Prefer the simplest 
 
 1. Read `ROADMAP.md`, `IMPLEMENTATION_PLAN.md`, and `NEW_CHAT_BOOTSTRAP.md` before changing implementation.
 2. For Blender, MPFB, character, scene, GLB, rigging, rendering, or 3D validation work, read `skills/spatial-forge-3d/SKILL.md` and only the routed references needed for the task.
-3. Work only on the current unchecked slice unless a prerequisite is genuinely missing.
-4. Keep code and folder structure obvious to a human reader.
-5. Avoid speculative abstraction, generic frameworks, large guard layers, and test matrices that slow iteration without protecting a demonstrated failure mode.
-6. Use meaningful smoke/integration checks that verify real outputs.
-7. Never mark a slice complete from static reasoning alone when it has a runtime success criterion.
-8. After a slice passes, update implementation status and the new-chat handoff before advancing.
+3. For web UI, mobile web, Telegram Mini App, layout, interaction, visual design, accessibility, or future Flutter UI work, read `skills/spatial-forge-ui/SKILL.md` and the relevant routed references.
+4. Work only on the current unchecked slice unless a prerequisite is genuinely missing.
+5. Keep code and folder structure obvious to a human reader.
+6. Avoid speculative abstraction, generic frameworks, large guard layers, and test matrices that slow iteration without protecting a demonstrated failure mode.
+7. Use meaningful smoke/integration checks that verify real outputs.
+8. Never mark a slice complete from static reasoning alone when it has a runtime success criterion.
+9. After a slice passes, update implementation status and the new-chat handoff before advancing.
 
 ## Zero-Cost Constraint
 
@@ -48,6 +49,16 @@ Use repository/environment secrets only when later slices genuinely require them
 - Structural validation and visual validation are separate gates. Metrics do not replace visual inspection.
 - When GLB is the deliverable, inspect the exported artifact and fresh-import it when that meaningfully tests the claim.
 
+## UI Rules
+
+- Spatial Forge is an inspection/creation tool, not a marketing site. Keep the model/preview visually dominant.
+- Phone and touch behavior are first-class. Do not design a desktop dashboard and shrink it down.
+- Use shared semantic design tokens and a small spacing/type system rather than per-screen styling.
+- Preserve the same product language and conceptual tokens between web and future Flutter implementations.
+- Keep core actions visible; do not hide required behavior behind hover or gesture-only interaction.
+- Review actual rendered UI at representative phone widths before claiming a visual slice is complete.
+- Fix meaningful Blocker/High issues from `skills/spatial-forge-ui/references/QUALITY.md`; do not delay useful slices for low-value cosmetic perfection.
+
 ## Compute Policy
 
 GitHub Actions is the normal build/automation compute path after the foundation is proven. Do not turn the VPS into a heavy render farm. The VPS should eventually coordinate jobs, temporary private assets, auth, and delivery.
@@ -73,6 +84,7 @@ Favor:
 - one or two representative end-to-end smoke paths
 - actual artifact inspection
 - fixed low-cost multiview evidence when visual comparison matters
+- representative phone-width UI checks for user-facing surfaces
 
 Avoid by default:
 - exhaustive unit tests for glue code
@@ -80,6 +92,7 @@ Avoid by default:
 - duplicate guards across layers
 - slow visual regression systems during early POC stages
 - rendering after every tiny adjustment
+- large device/viewport matrices without a demonstrated need
 
 Add a stronger test only when a real regression or risk justifies it.
 
@@ -95,7 +108,7 @@ For a runtime-backed slice, use the smallest relevant portion of this loop:
 5. download the relevant artifact when output inspection matters
 6. inspect filenames, non-zero sizes, and format/content as appropriate
 7. fresh-import exported 3D assets when that tests downstream correctness
-8. visually inspect generated previews when the slice makes a visual claim
+8. visually inspect generated previews or rendered UI when the slice makes a visual claim
 9. only then mark the runtime slice complete and sync docs
 
 A green workflow icon alone is not proof of correct output.
@@ -106,5 +119,6 @@ A green workflow icon alone is not proof of correct output.
 `ROADMAP.md` is the high-level direction and phase boundaries.
 `NEW_CHAT_BOOTSTRAP.md` is the exact handoff for another chat/agent.
 `skills/spatial-forge-3d/SKILL.md` is the project-specific 3D creation/validation intelligence router.
+`skills/spatial-forge-ui/SKILL.md` is the project-specific web/mobile/Flutter UI design intelligence router.
 
 Keep all of them synchronized with real runtime state. Documentation must never claim a workflow passes when the latest inspected run fails.
