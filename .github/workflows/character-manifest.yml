@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/character-manifest.yml"
       - "scripts/build_character.py"
+      - "scripts/validate_glb.py"
       - "schemas/character-build.schema.json"
       - "schemas/build-result.schema.json"
       - "fixtures/generic-character-v1.json"
@@ -25,6 +26,8 @@ jobs:
       SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
       SF_OUTPUT_DIR: "${{ github.workspace }}/output/character-manifest"
       SF_EXPECTED_MPFB_VERSION: "2.0.17"
+      SF_GLB_PATH: "${{ github.workspace }}/output/character-manifest/generic-character-v1.glb"
+      SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/character-manifest/fresh-import.json"
 
     steps:
       - name: Checkout
@@ -72,6 +75,14 @@ jobs:
             --background \
             --python scripts/build_character.py
 
+      - name: Fresh-import exported GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --python scripts/validate_glb.py
+
       - name: Verify outputs
         shell: bash
         run: |
@@ -81,7 +92,9 @@ jobs:
           test -s "$SF_OUTPUT_DIR/front.png"
           test -s "$SF_OUTPUT_DIR/three-quarter.png"
           test -s "$SF_OUTPUT_DIR/build-result.json"
+          test -s "$SF_OUTPUT_DIR/fresh-import.json"
           python -m json.tool "$SF_OUTPUT_DIR/build-result.json"
+          python -m json.tool "$SF_OUTPUT_DIR/fresh-import.json"
           ls -lh "$SF_OUTPUT_DIR"
 
       - name: Upload manifest proof artifacts
