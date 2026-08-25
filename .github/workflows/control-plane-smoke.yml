@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile control-plane/server.py
+          python3 -m py_compile control-plane/server.py deploy/create-proof-session.py
           bash -n deploy/bootstrap-vps.sh
           bash -n deploy/install-proof-build.sh
 
