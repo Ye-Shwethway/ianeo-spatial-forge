@@ -1,0 +1,71 @@
+name: MPFB Face Target Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mpfb-face-target-probe.yml"
+      - "scripts/probe_mpfb_face_targets.py"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_EXPECTED_MPFB_VERSION: "2.0.17"
+      SF_FACE_TARGET_PROBE: "${{ github.workspace }}/output/mpfb-face-targets.json"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check probe syntax
+        run: python -m py_compile scripts/probe_mpfb_face_targets.py
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 "$BLENDER_URL" --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Install MPFB extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
+
+      - name: Probe bundled face targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          "$RUNNER_TEMP/blender/blender" --background --python scripts/probe_mpfb_face_targets.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("output/mpfb-face-targets.json").read_text())
+          assert data["mpfb"] == "2.0.17"
+          assert data["bundled_target_count"] > 0
+          assert data["face_candidate_count"] > 0
+          print("MPFB face target probe PASS")
+          print("Bundled targets:", data["bundled_target_count"])
+          print("Face candidates:", data["face_candidate_count"])
+          PY
+
+      - name: Upload target inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpfb-face-target-inventory
+          path: output/mpfb-face-targets.json
+          if-no-files-found: error
+          retention-days: 7
