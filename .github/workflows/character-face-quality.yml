@@ -10,7 +10,7 @@ on:
       - "scripts/build_character.py"
       - "scripts/validate_glb.py"
       - "fixtures/generic-character-v1.json"
-      - "fixtures/generic-face-quality-v1.json"
+      - "fixtures/generic-face-sculpt-v2.json"
 
 permissions:
   contents: read
@@ -23,11 +23,11 @@ jobs:
       BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
       BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
       SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
-      SF_FACE_PROFILE: "${{ github.workspace }}/fixtures/generic-face-quality-v1.json"
-      SF_OUTPUT_DIR: "${{ github.workspace }}/output/face-quality"
+      SF_FACE_PROFILE: "${{ github.workspace }}/fixtures/generic-face-sculpt-v2.json"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output/face-sculpt-v2"
       SF_EXPECTED_MPFB_VERSION: "2.0.17"
-      SF_GLB_PATH: "${{ github.workspace }}/output/face-quality/generic-character-face-quality-v1.glb"
-      SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/face-quality/fresh-import.json"
+      SF_GLB_PATH: "${{ github.workspace }}/output/face-sculpt-v2/generic-character-face-sculpt-v2.glb"
+      SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/face-sculpt-v2/fresh-import.json"
 
     steps:
       - name: Checkout
@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m json.tool fixtures/generic-character-v1.json >/dev/null
-          python -m json.tool fixtures/generic-face-quality-v1.json >/dev/null
+          python -m json.tool fixtures/generic-face-sculpt-v2.json >/dev/null
           python -m py_compile scripts/build_character.py scripts/build_face_quality.py scripts/validate_glb.py
 
       - name: Install headless render runtime
@@ -64,7 +64,7 @@ jobs:
           "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
           "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
 
-      - name: Build face quality revision
+      - name: Build visible face sculpt
         shell: bash
         run: |
           set -euo pipefail
@@ -77,13 +77,13 @@ jobs:
           set -euo pipefail
           "$RUNNER_TEMP/blender/blender" --background --python scripts/validate_glb.py
 
-      - name: Verify face quality contract
+      - name: Verify visible face sculpt contract
         shell: bash
         run: |
           set -euo pipefail
           for file in \
-            generic-character-face-quality-v1.blend \
-            generic-character-face-quality-v1.glb \
+            generic-character-face-sculpt-v2.blend \
+            generic-character-face-sculpt-v2.glb \
             front.png \
             three-quarter.png \
             profile.png \
@@ -97,14 +97,20 @@ jobs:
           import json
           from pathlib import Path
 
-          root = Path("output/face-quality")
+          root = Path("output/face-sculpt-v2")
           result = json.loads((root / "build-result.json").read_text())
           fresh = json.loads((root / "fresh-import.json").read_text())
           manifest = json.loads(Path("fixtures/generic-character-v1.json").read_text())
+          profile = json.loads(Path("fixtures/generic-face-sculpt-v2.json").read_text())
 
           assert result["runtime"]["mpfb"] == "2.0.17"
           assert result["locked_body_controls"] == manifest["phenotype"]
-          assert len(result["applied_face_targets"]) == 11
+          assert result["face_profile"] == profile
+          assert result["face_profile"]["profile_id"] == "face-sculpt-v2"
+          assert len(result["applied_face_targets"]) == 19
+          cleanup = result["helper_cleanup"]
+          assert cleanup["mask_modifiers_applied"]
+          assert cleanup["vertices_after"] < cleanup["vertices_before"]
           assert result["structural"]["skin_count"] == 1
           assert result["structural"]["joint_count"] == 53
           assert fresh["mesh_objects"] == 2
@@ -116,16 +122,17 @@ jobs:
           print(json.dumps({
               "face_profile": result["face_profile"],
               "applied_face_targets": result["applied_face_targets"],
+              "helper_cleanup": cleanup,
               "structural": result["structural"],
               "fresh_import": fresh,
           }, indent=2))
           PY
 
-      - name: Upload face quality artifact
+      - name: Upload visible face sculpt artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: spatial-forge-character-face-quality
-          path: output/face-quality/
+          name: spatial-forge-character-face-sculpt-v2
+          path: output/face-sculpt-v2/
           if-no-files-found: error
           retention-days: 7
