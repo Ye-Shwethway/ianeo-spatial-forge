@@ -81,15 +81,20 @@ Work one slice at a time. A slice is complete only after runtime evidence is ins
     - Private VPS install path was proven with build ID `generic-face-quality-v1`; install run `32938078210` PASS.
     - Creator opened the private build from the authenticated Asset Library on Android and confirmed it renders in the web viewer.
     - **Result:** transport/control is proven, but visible quality gain is too subtle. This is a technical proof, not a visual-quality pass.
-  - [ ] P3Q.3B **Visible face sculpt pass — ACTIVE.**
-    - Temporarily remove/disable the current hair asset in face-review builds because it obscures the face.
-    - Keep body macro phenotype locked.
-    - Use stronger but still human-looking supported MPFB face targets for head/jaw/chin/cheek/nose/eye-region/lips.
-    - Tighten portrait framing so head/shoulders dominate the comparison.
-    - Produce baseline vs revised fixed evidence and require an obvious visual difference before calling the slice visually successful.
-    - Do not add skin/material complexity yet; first prove readable facial form.
+  - [ ] P3Q.3B **Visible face sculpt pass — AWAITING CREATOR WEB REVIEW.**
+    - The obstruction originally described as hair was traced to MPFB helper geometry; `build_face_quality.py` did not add a real hair asset.
+    - Helper cleanup must occur **after** `game_engine` rig creation. Applying helper masks before rigging caused MPFB topology groups to become empty and produced `ZeroDivisionError`; commit `830420e` fixes the order.
+    - Helper cleanup now physically applies the MPFB `Hide helpers` MASK after rig creation: vertices `19,158 → 13,380` while preserving the 53-joint rig.
+    - The first green cleanup run `32974243141` proved the cleanup/rig order but accidentally still used `face-quality-v1`; it is not the v2 sculpt proof.
+    - Workflow commit `02fcfd5` switched the build to the actual `fixtures/generic-face-sculpt-v2.json` profile and added exact v2 contract checks.
+    - Actual v2 run `32974854289` PASS; artifact `9609141774`, digest `sha256:252da42af00832f8a934085c28ecaa7d44df0fcb52a5c3a1881476e299f0c026`.
+    - v2 applies 19 supported target operations across head width/depth, cheekbones/volume, chin width/height/prominence, nose width/depth, eye scale/height, brow angle, mouth width, and lip volume.
+    - Structural proof: 1 mesh / 1 skin / 53 joints; fresh import: 2 mesh objects / 1 armature / 53 joints; body macro phenotype unchanged.
+    - IANEO visually inspected front, three-quarter, profile, and tight face-close evidence: helper slabs are gone, face is unobstructed, jaw/chin/cheek and profile form are more readable, and no malformed mesh/body drift was observed. The white-clay material still limits eye/brow/lip readability; that remains P3Q.4/P3Q.5 work.
+    - Private review build ID `generic-face-sculpt-v2` was installed through GitHub Actions → VPS; install run `32975345268` PASS, including payload verification, staging, service promotion, installed-build verification, and staging cleanup.
+    - **Remaining gate:** Creator must inspect `generic-face-sculpt-v2` in the authenticated Asset Library on Android. Mark P3Q.3B complete only if that live 3D review confirms the visible sculpt is useful; otherwise revise from this exact v2 baseline.
 
-**P3Q.3 visual finding:** the first 11-target build is structurally healthy and web-deliverable, but the Creator correctly judged that it looks almost the same as the baseline. The current blocky hair also hides much of the face. Continue with P3Q.3B rather than claiming face quality is complete.
+**P3Q.3 rule:** technical/structural success and visual success remain separate. P3Q.3B has passed automated structure plus IANEO evidence review, but the Creator's live web verdict is still required before closing the slice.
 
 - [ ] P3Q.4 Production-quality PBR skin/eyes/mouth appearance.
 - [ ] P3Q.5 Hair/brows/facial-hair asset path.
@@ -100,7 +105,7 @@ Work one slice at a time. A slice is complete only after runtime evidence is ins
 
 ### P3Q evidence-driven order
 
-Current order is **P3Q.3B visible face form → P3Q.4 skin/eyes/mouth → P3Q.5 hair/brows → P3Q.2 mesh/surface polish → clothing/deformation/presentation** unless new visual evidence justifies a change. P3Q.2 remains required; it is simply not the highest-value next move.
+Current order is **Creator review of P3Q.3B → P3Q.4 skin/eyes/mouth → P3Q.5 hair/brows → P3Q.2 mesh/surface polish → clothing/deformation/presentation** unless new visual evidence justifies a change. P3Q.2 remains required; it is simply not the highest-value next move.
 
 ### P3Q quality rule
 
