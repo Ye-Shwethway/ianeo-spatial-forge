@@ -121,8 +121,9 @@ jobs:
           ]
           assert result["structural"]["skin_count"] == 1
           assert result["structural"]["joint_count"] == 53
-          assert fresh["armatures"] == 1
-          assert fresh["bones"] == 53
+          assert fresh["mesh_objects"] == 2
+          assert fresh["armature_objects"] == 1
+          assert fresh["joint_count"] == 53
           print(json.dumps({
               "visual_evidence": result["visual_evidence"],
               "structural": result["structural"],
