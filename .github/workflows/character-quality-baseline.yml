@@ -85,13 +85,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Baseline output files:"
-          find "$SF_OUTPUT_DIR" -maxdepth 1 -type f -printf '%f\n' | sort
-          echo "build-result.json:"
-          cat "$SF_OUTPUT_DIR/build-result.json"
-          echo "fresh-import.json:"
-          cat "$SF_OUTPUT_DIR/fresh-import.json"
-
           for file in \
             generic-character-v1.blend \
             generic-character-v1.glb \
@@ -129,7 +122,7 @@ jobs:
           assert result["structural"]["skin_count"] == 1
           assert result["structural"]["joint_count"] == 53
           assert fresh["mesh_objects"] == 2
-          assert fresh["armature_objects"] == 1
+          assert fresh["armatures"] == 1
           assert fresh["joint_count"] == 53
           print(json.dumps({
               "visual_evidence": result["visual_evidence"],
@@ -142,7 +135,6 @@ jobs:
           ls -lh "$SF_OUTPUT_DIR"
 
       - name: Upload P3Q.1 baseline artifacts
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: spatial-forge-character-quality-baseline
