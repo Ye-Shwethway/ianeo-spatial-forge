@@ -83,7 +83,7 @@ def apply_face_profile(human, profile, TargetService):
 
 
 def apply_helper_masks(human):
-    """Bake MPFB helper MASK modifiers so helper slabs cannot survive GLB export."""
+    """Bake MPFB helper MASK modifiers after rig creation so helpers cannot survive export."""
     bpy.ops.object.select_all(action="DESELECT")
     human.hide_set(False)
     human.select_set(True)
@@ -138,16 +138,18 @@ def main():
     human.name = f"{manifest['character_id']}_{profile['profile_id']}"
     applied_targets = apply_face_profile(human, profile, TargetService)
 
-    # Bake authored face targets first, then physically apply MPFB helper masks.
-    # This keeps the intended body/face but removes helper geometry from render/export.
+    # MPFB's game_engine rig builder depends on the original helper/topology groups.
+    # Bake the authored targets, create/bind the rig first, then physically apply
+    # helper MASK modifiers so helper slabs are absent from render/export.
     TargetService.bake_targets(human)
-    helper_cleanup = apply_helper_masks(human)
     base.add_neutral_material(human)
 
     rig = HumanService.add_builtin_rig(human, "game_engine")
     if rig is None:
         raise RuntimeError("MPFB failed to create game_engine rig")
     rig.name = f"{human.name}_rig"
+
+    helper_cleanup = apply_helper_masks(human)
 
     bbox_min, bbox_max = base.world_bounds(human)
     center = (bbox_min + bbox_max) * 0.5
