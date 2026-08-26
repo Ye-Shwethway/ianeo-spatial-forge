@@ -77,6 +77,37 @@ jobs:
           set -euo pipefail
           "$RUNNER_TEMP/blender/blender" --background --python scripts/validate_glb.py
 
+      - name: Print P3Q.3B diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== output files ==="
+          find "$SF_OUTPUT_DIR" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          echo "=== build summary ==="
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["SF_OUTPUT_DIR"])
+          result = json.loads((root / "build-result.json").read_text())
+          fresh = json.loads((root / "fresh-import.json").read_text())
+          print(json.dumps({
+              "face_profile": result.get("face_profile"),
+              "applied_target_count": len(result.get("applied_face_targets", [])),
+              "helper_cleanup": result.get("helper_cleanup"),
+              "structural": result.get("structural"),
+              "visual_evidence": result.get("visual_evidence"),
+              "fresh_import": fresh,
+          }, indent=2))
+          PY
+
+      - name: Upload P3Q.3B artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-character-face-sculpt-v2
+          path: ${{ env.SF_OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify P3Q.3B structural contract
         shell: bash
         run: |
@@ -90,47 +121,35 @@ jobs:
             face-close.png \
             build-result.json \
             fresh-import.json; do
-            test -s "$SF_OUTPUT_DIR/$file"
+            test -s "$SF_OUTPUT_DIR/$file" || { echo "missing: $file"; exit 1; }
           done
 
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
 
-          root = Path("output/face-sculpt-v2")
+          root = Path(os.environ["SF_OUTPUT_DIR"])
           result = json.loads((root / "build-result.json").read_text())
           fresh = json.loads((root / "fresh-import.json").read_text())
           manifest = json.loads(Path("fixtures/generic-character-v1.json").read_text())
 
-          assert result["runtime"]["mpfb"] == "2.0.17"
-          assert result["face_profile"]["profile_id"] == "face-sculpt-v2"
-          assert result["locked_body_controls"] == manifest["phenotype"]
-          assert len(result["applied_face_targets"]) >= 18
-          cleanup = result["helper_cleanup"]
-          assert cleanup["mask_modifiers_applied"]
-          assert cleanup["vertices_after"] < cleanup["vertices_before"]
-          assert result["structural"]["skin_count"] == 1
-          assert result["structural"]["joint_count"] == 53
-          assert fresh["mesh_objects"] >= 1
-          assert fresh["armatures"] == 1
-          assert fresh["joint_count"] == 53
-          assert result["visual_evidence"] == [
-              "front.png", "three-quarter.png", "profile.png", "face-close.png"
+          checks = [
+              ("mpfb version", result["runtime"]["mpfb"] == "2.0.17"),
+              ("profile id", result["face_profile"]["profile_id"] == "face-sculpt-v2"),
+              ("body lock", result["locked_body_controls"] == manifest["phenotype"]),
+              ("target count", len(result["applied_face_targets"]) >= 18),
+              ("mask modifiers present", bool(result["helper_cleanup"]["mask_modifiers_applied"])),
+              ("helper vertices reduced", result["helper_cleanup"]["vertices_after"] < result["helper_cleanup"]["vertices_before"]),
+              ("skin count", result["structural"]["skin_count"] == 1),
+              ("joint count", result["structural"]["joint_count"] == 53),
+              ("fresh mesh", fresh["mesh_objects"] >= 1),
+              ("fresh armature", fresh["armatures"] == 1),
+              ("fresh joints", fresh["joint_count"] == 53),
+              ("visual evidence", result["visual_evidence"] == ["front.png", "three-quarter.png", "profile.png", "face-close.png"]),
           ]
-          print(json.dumps({
-              "face_profile": result["face_profile"],
-              "applied_target_count": len(result["applied_face_targets"]),
-              "helper_cleanup": cleanup,
-              "structural": result["structural"],
-              "fresh_import": fresh,
-          }, indent=2))
+          failed = [name for name, ok in checks if not ok]
+          for name, ok in checks:
+              print(f"{'PASS' if ok else 'FAIL'}: {name}")
+          if failed:
+              raise SystemExit("P3Q.3B contract failed: " + ", ".join(failed))
           PY
-
-      - name: Upload P3Q.3B artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spatial-forge-character-face-sculpt-v2
-          path: output/face-sculpt-v2/
-          if-no-files-found: error
-          retention-days: 7
