@@ -113,7 +113,7 @@ jobs:
           set -euo pipefail
           ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             "$VPS_USER@$VPS_HOST" \
-            'set -e; sudo /usr/bin/systemctl status ianeo-spatial-forge.service --no-pager | grep -q "Promoted staged build: generic-face-quality-v1"; curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"''
+            'set -e; /usr/bin/systemctl status ianeo-spatial-forge.service --no-pager | grep -q "Promoted staged build: generic-face-quality-v1"; curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"''
 
       - name: Clear staging marker after proof
         if: success()
