@@ -43,6 +43,10 @@ def version_string(version):
     return ".".join(str(part) for part in version)
 
 
+def env_flag(name):
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_manifest(path: Path):
     data = json.loads(path.read_text(encoding="utf-8"))
 
@@ -223,6 +227,7 @@ def main():
     output_dir = Path(os.environ.get("SF_OUTPUT_DIR", "output/character-manifest")).resolve()
     expected_mpfb = os.environ.get("SF_EXPECTED_MPFB_VERSION", "2.0.17")
     parent_manifest_path = os.environ.get("SF_PARENT_MANIFEST")
+    quality_baseline = env_flag("SF_QUALITY_BASELINE")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = load_manifest(manifest_path)
@@ -317,6 +322,32 @@ def main():
     ))
     render_view(scene, camera, center, three_quarter_location, three_quarter_path)
 
+    visual_evidence = [front_path.name, three_quarter_path.name]
+    output_paths = [
+        output_entry("blend", blend_path),
+        output_entry("glb", glb_path),
+        output_entry("preview", front_path),
+        output_entry("preview", three_quarter_path),
+    ]
+
+    if quality_baseline:
+        profile_path = output_dir / "profile.png"
+        face_close_path = output_dir / "face-close.png"
+
+        profile_location = Vector((center.x + distance, center.y, center.z + height * 0.02))
+        render_view(scene, camera, center, profile_location, profile_path)
+
+        face_target = Vector((center.x, center.y, bbox_min.z + height * 0.86))
+        face_distance = max(height * 0.52, width * 1.8)
+        face_location = Vector((face_target.x, face_target.y - face_distance, face_target.z + height * 0.015))
+        render_view(scene, camera, face_target, face_location, face_close_path)
+
+        visual_evidence.extend([profile_path.name, face_close_path.name])
+        output_paths.extend([
+            output_entry("preview", profile_path),
+            output_entry("preview", face_close_path),
+        ])
+
     structural = inspect_glb(glb_path)
     result = {
         "schema_version": "1.0",
@@ -326,15 +357,15 @@ def main():
         "runtime": {"blender": bpy.app.version_string, "mpfb": actual_mpfb},
         "applied_controls": dict(manifest["phenotype"]),
         "unsupported_fields": unsupported,
-        "outputs": [
-            output_entry("blend", blend_path),
-            output_entry("glb", glb_path),
-            output_entry("preview", front_path),
-            output_entry("preview", three_quarter_path),
-        ],
+        "outputs": output_paths,
         "structural": structural,
-        "visual_evidence": [front_path.name, three_quarter_path.name],
+        "visual_evidence": visual_evidence,
     }
+    if quality_baseline:
+        result["quality_baseline"] = {
+            "fixed_views": ["front", "three-quarter", "profile", "face-close"],
+            "purpose": "P3Q.1 visual baseline; no quality modifications applied",
+        }
     if revision is not None:
         result["revision"] = revision
     result_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
@@ -346,6 +377,7 @@ def main():
     print("Applied controls:", result["applied_controls"])
     print("Revision:", revision)
     print("Unsupported measurements:", unsupported)
+    print("Quality baseline:", quality_baseline)
     print("Structural:", structural)
     print("Output:", output_dir)
 
