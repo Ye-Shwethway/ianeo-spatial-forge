@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "profile_id": "face-sculpt-v2",
+  "controls": {
+    "head_width": 0.68,
+    "head_depth": 0.62,
+    "cheek_bones": 0.72,
+    "cheek_volume": 0.60,
+    "chin_width": 0.70,
+    "chin_height": 0.64,
+    "chin_prominence": 0.72,
+    "nose_width": 0.36,
+    "nose_depth": 0.66,
+    "eye_scale": 0.62,
+    "eye_height": 0.58,
+    "brow_angle": 0.38,
+    "mouth_width": 0.60,
+    "upper_lip_volume": 0.66,
+    "lower_lip_volume": 0.68
+  }
+}
