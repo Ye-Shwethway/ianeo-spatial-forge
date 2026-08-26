@@ -1,0 +1,131 @@
+name: Character Face Quality
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/character-face-quality.yml"
+      - "scripts/build_face_quality.py"
+      - "scripts/build_character.py"
+      - "scripts/validate_glb.py"
+      - "fixtures/generic-character-v1.json"
+      - "fixtures/generic-face-quality-v1.json"
+
+permissions:
+  contents: read
+
+jobs:
+  face-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
+      SF_FACE_PROFILE: "${{ github.workspace }}/fixtures/generic-face-quality-v1.json"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output/face-quality"
+      SF_EXPECTED_MPFB_VERSION: "2.0.17"
+      SF_GLB_PATH: "${{ github.workspace }}/output/face-quality/generic-character-face-quality-v1.glb"
+      SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/face-quality/fresh-import.json"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool fixtures/generic-character-v1.json >/dev/null
+          python -m json.tool fixtures/generic-face-quality-v1.json >/dev/null
+          python -m py_compile scripts/build_character.py scripts/build_face_quality.py scripts/validate_glb.py
+
+      - name: Install headless render runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 "$BLENDER_URL" --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Install MPFB extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
+
+      - name: Build face quality revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SF_OUTPUT_DIR"
+          "$RUNNER_TEMP/blender/blender" --background --python scripts/build_face_quality.py
+
+      - name: Fresh-import exported GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --background --python scripts/validate_glb.py
+
+      - name: Verify face quality contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            generic-character-face-quality-v1.blend \
+            generic-character-face-quality-v1.glb \
+            front.png \
+            three-quarter.png \
+            profile.png \
+            face-close.png \
+            build-result.json \
+            fresh-import.json; do
+            test -s "$SF_OUTPUT_DIR/$file"
+          done
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("output/face-quality")
+          result = json.loads((root / "build-result.json").read_text())
+          fresh = json.loads((root / "fresh-import.json").read_text())
+          manifest = json.loads(Path("fixtures/generic-character-v1.json").read_text())
+
+          assert result["runtime"]["mpfb"] == "2.0.17"
+          assert result["locked_body_controls"] == manifest["phenotype"]
+          assert len(result["applied_face_targets"]) == 12
+          assert result["structural"]["skin_count"] == 1
+          assert result["structural"]["joint_count"] == 53
+          assert fresh["mesh_objects"] == 2
+          assert fresh["armatures"] == 1
+          assert fresh["joint_count"] == 53
+          assert result["visual_evidence"] == [
+              "front.png", "three-quarter.png", "profile.png", "face-close.png"
+          ]
+          print(json.dumps({
+              "face_profile": result["face_profile"],
+              "applied_face_targets": result["applied_face_targets"],
+              "structural": result["structural"],
+              "fresh_import": fresh,
+          }, indent=2))
+          PY
+
+      - name: Upload face quality artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-character-face-quality
+          path: output/face-quality/
+          if-no-files-found: error
+          retention-days: 7
