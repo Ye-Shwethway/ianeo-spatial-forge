@@ -10,6 +10,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
+from staged_install import promote_staged_build
+
 HOST = os.environ.get("SF_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SF_PORT", "18792"))
 ROOT = Path(os.environ.get("SF_ROOT", "/srv/ianeo-spatial-forge"))
@@ -87,14 +89,14 @@ def build_summary(build_dir):
         "build_id": build_dir.name,
         "status": metadata.get("status", "ready"),
         "character_id": metadata.get("character_id"),
-        "version": metadata.get("version"),
+        "version": metadata.get("version", metadata.get("character_version")),
         "created_at": utc_iso(int(build_dir.stat().st_mtime)),
         "size_bytes": size_bytes,
     }
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SpatialForge/0.4"
+    server_version = "SpatialForge/0.5"
 
     def log_message(self, fmt, *args):
         print(f"{self.client_address[0]} {self.command} {self._safe_path()} {fmt % args}")
@@ -319,6 +321,9 @@ def main():
         raise SystemExit("SF_CONTROL_TOKEN is required")
     BUILDS.mkdir(parents=True, exist_ok=True)
     SESSIONS.mkdir(parents=True, exist_ok=True)
+    promoted = promote_staged_build(ROOT)
+    if promoted:
+        print(f"Promoted staged build: {promoted}")
     cleanup_expired_sessions()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"IANEO Spatial Forge control plane listening on {HOST}:{PORT}")
