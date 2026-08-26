@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "profile_id": "face-quality-v1",
+  "controls": {
+    "head_width": 0.58,
+    "head_depth": 0.56,
+    "chin_width": 0.62,
+    "chin_prominence": 0.62,
+    "nose_width": 0.42,
+    "nose_depth": 0.56,
+    "eye_scale": 0.55,
+    "brow_angle": 0.44,
+    "upper_lip_volume": 0.55,
+    "lower_lip_volume": 0.58
+  }
+}
