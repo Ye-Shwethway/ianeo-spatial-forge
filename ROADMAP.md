@@ -98,11 +98,14 @@ This is the active phase before Telegram or MCP.
 
 - **P3Q.1 baseline: PASS.** Fixed front, three-quarter, profile and face/upper-body evidence established; the face was identified as the largest visible bottleneck.
 - **P3Q.3A face-control technical proof: PASS.** Actual MPFB `2.0.17` target data was probed; 530 bundled targets were discovered, including 270 face/head-related targets. A small 11-target face profile survived target application, bake, rig, GLB export, fresh import, VPS installation, and authenticated Android web viewing.
-- **Visual verdict on P3Q.3A: NOT a quality pass.** The Creator inspected the private build and judged the visible change too subtle. The current blocky hair also obscures much of the face. Structural/transport success must not be confused with beauty or useful visual improvement.
-- **P3Q.3B Visible Face Sculpt Pass: ACTIVE.** Temporarily remove the current hair in face-review builds, lock body macros, use stronger but still human-looking supported face targets, tighten portrait framing, and require an obvious baseline-vs-revision difference before moving on.
+- **Visual verdict on P3Q.3A: NOT a quality pass.** The Creator inspected the private build and judged the visible change too subtle. Structural/transport success must not be confused with beauty or useful visual improvement.
+- **P3Q.3B visible face sculpt: BUILD/INSTALL PASS, CREATOR REVIEW PENDING.** The apparent blocky “hair” was traced to MPFB helper geometry rather than a real hair asset. Helper MASK cleanup must run after `game_engine` rig creation; the correct order preserves the rig while stripping helper geometry from `19,158` to `13,380` vertices.
+- Actual v2 profile `face-sculpt-v2` uses 19 supported target operations across head, cheeks, chin, nose, eyes, brow, mouth and lips while keeping body macros locked. Run `32974854289` PASS; artifact `9609141774`, digest `sha256:252da42af00832f8a934085c28ecaa7d44df0fcb52a5c3a1881476e299f0c026`; GLB 1 mesh / 1 skin / 53 joints; fresh import 2 mesh objects / 1 armature / 53 joints.
+- IANEO visually inspected all four v2 evidence images: helper slabs are gone, face is unobstructed, facial form is more readable, and no malformed mesh/body drift was observed. White-clay material still suppresses eye/brow/lip readability and remains a later material/asset problem.
+- Private review build `generic-face-sculpt-v2` was installed by GitHub Actions → VPS in run `32975345268` PASS. **The remaining P3Q.3B gate is Creator live 3D inspection in the authenticated Asset Library.**
 
 Current evidence-driven quality order:
-1. visible face form / sculpt readability (`P3Q.3B`)
+1. Creator verdict on `generic-face-sculpt-v2` (`P3Q.3B`)
 2. GLB-safe skin, eyes, mouth/lips (`P3Q.4`)
 3. hair/brows/facial-hair asset quality (`P3Q.5`)
 4. mesh/surface polish (`P3Q.2` remains required)
