@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      BUILD_ID: "generic-face-quality-v1"
       VPS_HOST: ${{ secrets.SPATIALFORGE_VPS_HOST }}
       VPS_PORT: ${{ secrets.SPATIALFORGE_VPS_PORT }}
       VPS_USER: ${{ secrets.SPATIALFORGE_VPS_USER }}
@@ -92,23 +93,33 @@ jobs:
           cp "$ROOT/build-result.json" "$STAGE/build-result.json"
           cp "$ROOT/front.png" "$STAGE/front.png"
           cp "$ROOT/three-quarter.png" "$STAGE/three-quarter.png"
-          tar -C "$STAGE" -cf - model.glb build-result.json front.png three-quarter.png | \
+          printf '{"build_id":"%s"}\n' "$BUILD_ID" > "$STAGE/install.json"
+          tar -C "$STAGE" -cf - model.glb build-result.json front.png three-quarter.png install.json | \
             ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
               "$VPS_USER@$VPS_HOST" \
               'set -e; rm -rf /srv/ianeo-spatial-forge/app/build-staging/current; mkdir -p /srv/ianeo-spatial-forge/app/build-staging/current; tar -xf - -C /srv/ianeo-spatial-forge/app/build-staging/current'
 
-      - name: Promote through existing private installer
+      - name: Promote through Spatial Forge runtime owner
         shell: bash
         run: |
           set -euo pipefail
           ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             "$VPS_USER@$VPS_HOST" \
-            'sudo /usr/local/sbin/ianeo-spatial-forge-install-proof-build'
+            'sudo /usr/bin/systemctl restart ianeo-spatial-forge.service && sudo /usr/bin/systemctl is-active ianeo-spatial-forge.service'
 
-      - name: Verify installed build through localhost API
+      - name: Verify installed private build
         shell: bash
         run: |
           set -euo pipefail
           ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             "$VPS_USER@$VPS_HOST" \
-            'set -e; test -s /srv/ianeo-spatial-forge/private/builds/p3-private-proof/model.glb; grep -q '"'"'face-quality-v1'"'"' /srv/ianeo-spatial-forge/private/builds/p3-private-proof/build-result.json; curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"''
+            'set -e; test -s /srv/ianeo-spatial-forge/private/builds/generic-face-quality-v1/model.glb; grep -q '"'"'face-quality-v1'"'"' /srv/ianeo-spatial-forge/private/builds/generic-face-quality-v1/build-result.json; curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"''
+
+      - name: Clear staging marker after proof
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'rm -rf /srv/ianeo-spatial-forge/app/build-staging/current'
