@@ -77,36 +77,50 @@ jobs:
           set -euo pipefail
           "$RUNNER_TEMP/blender/blender" --background --python scripts/validate_glb.py
 
-      - name: Print P3Q.3B diagnostics
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== output files ==="
-          find "$SF_OUTPUT_DIR" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-          echo "=== build summary ==="
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          root = Path(os.environ["SF_OUTPUT_DIR"])
-          result = json.loads((root / "build-result.json").read_text())
-          fresh = json.loads((root / "fresh-import.json").read_text())
-          print(json.dumps({
-              "face_profile": result.get("face_profile"),
-              "applied_target_count": len(result.get("applied_face_targets", [])),
-              "helper_cleanup": result.get("helper_cleanup"),
-              "structural": result.get("structural"),
-              "visual_evidence": result.get("visual_evidence"),
-              "fresh_import": fresh,
-          }, indent=2))
-          PY
-
-      - name: Upload P3Q.3B artifact
+      - name: Upload P3Q.3B artifact before assertions
         uses: actions/upload-artifact@v4
         with:
           name: spatial-forge-character-face-sculpt-v2
-          path: ${{ env.SF_OUTPUT_DIR }}
+          path: output/face-sculpt-v2/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Print P3Q.3B diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          echo "=== working directory ==="
+          pwd
+          echo "=== output files ==="
+          ls -lah output/face-sculpt-v2/ || true
+          find output/face-sculpt-v2 -maxdepth 1 -type f -print 2>/dev/null || true
+          echo "=== build summary ==="
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("output/face-sculpt-v2")
+          for filename in ("build-result.json", "fresh-import.json"):
+              path = root / filename
+              print(filename, "exists=", path.exists(), "size=", path.stat().st_size if path.exists() else None)
+          try:
+              result = json.loads((root / "build-result.json").read_text())
+              print(json.dumps({
+                  "face_profile": result.get("face_profile"),
+                  "applied_target_count": len(result.get("applied_face_targets", [])),
+                  "helper_cleanup": result.get("helper_cleanup"),
+                  "structural": result.get("structural"),
+                  "visual_evidence": result.get("visual_evidence"),
+              }, indent=2))
+          except Exception as exc:
+              print("build-result diagnostic error:", repr(exc))
+          try:
+              fresh = json.loads((root / "fresh-import.json").read_text())
+              print("fresh_import=", json.dumps(fresh, indent=2))
+          except Exception as exc:
+              print("fresh-import diagnostic error:", repr(exc))
+          PY
+          exit 0
 
       - name: Verify P3Q.3B structural contract
         shell: bash
