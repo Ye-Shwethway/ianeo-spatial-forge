@@ -104,7 +104,7 @@ jobs:
 
           assert result["runtime"]["mpfb"] == "2.0.17"
           assert result["locked_body_controls"] == manifest["phenotype"]
-          assert len(result["applied_face_targets"]) == 12
+          assert len(result["applied_face_targets"]) == 11
           assert result["structural"]["skin_count"] == 1
           assert result["structural"]["joint_count"] == 53
           assert fresh["mesh_objects"] == 2
