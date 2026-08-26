@@ -14,7 +14,16 @@ import build_character as base
 FACE_CONTROL_MAP = {
     "head_width": (("head-scale-horiz-decr",), ("head-scale-horiz-incr",)),
     "head_depth": (("head-scale-depth-decr",), ("head-scale-depth-incr",)),
+    "cheek_bones": (
+        ("l-cheek-bones-decr", "r-cheek-bones-decr"),
+        ("l-cheek-bones-incr", "r-cheek-bones-incr"),
+    ),
+    "cheek_volume": (
+        ("l-cheek-volume-decr", "r-cheek-volume-decr"),
+        ("l-cheek-volume-incr", "r-cheek-volume-incr"),
+    ),
     "chin_width": (("chin-width-decr",), ("chin-width-incr",)),
+    "chin_height": (("chin-height-decr",), ("chin-height-incr",)),
     "chin_prominence": (("chin-prominent-decr",), ("chin-prominent-incr",)),
     "nose_width": (("nose-scale-horiz-decr",), ("nose-scale-horiz-incr",)),
     "nose_depth": (("nose-scale-depth-decr",), ("nose-scale-depth-incr",)),
@@ -22,7 +31,12 @@ FACE_CONTROL_MAP = {
         ("l-eye-scale-decr", "r-eye-scale-decr"),
         ("l-eye-scale-incr", "r-eye-scale-incr"),
     ),
+    "eye_height": (
+        ("l-eye-height2-decr", "r-eye-height2-decr"),
+        ("l-eye-height2-incr", "r-eye-height2-incr"),
+    ),
     "brow_angle": (("eyebrows-angle-down",), ("eyebrows-angle-up",)),
+    "mouth_width": (("mouth-scale-horiz-decr",), ("mouth-scale-horiz-incr",)),
     "upper_lip_volume": (("mouth-upperlip-volume-decr",), ("mouth-upperlip-volume-incr",)),
     "lower_lip_volume": (("mouth-lowerlip-volume-decr",), ("mouth-lowerlip-volume-incr",)),
 }
@@ -35,8 +49,11 @@ def load_face_profile(path: Path):
     if data["schema_version"] != "1.0":
         raise ValueError("unsupported face profile schema_version")
     controls = data["controls"]
-    if set(controls) != set(FACE_CONTROL_MAP):
-        raise ValueError(f"face controls must contain exactly: {', '.join(FACE_CONTROL_MAP)}")
+    if not isinstance(controls, dict) or not controls:
+        raise ValueError("face controls must be a non-empty object")
+    unknown = sorted(set(controls) - set(FACE_CONTROL_MAP))
+    if unknown:
+        raise ValueError(f"unsupported face controls: {unknown}")
     for name, value in controls.items():
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"face control {name} must be numeric")
@@ -65,6 +82,27 @@ def apply_face_profile(human, profile, TargetService):
     return applied
 
 
+def apply_helper_masks(human):
+    """Bake MPFB helper MASK modifiers so helper slabs cannot survive GLB export."""
+    bpy.ops.object.select_all(action="DESELECT")
+    human.hide_set(False)
+    human.select_set(True)
+    bpy.context.view_layer.objects.active = human
+
+    mask_names = [modifier.name for modifier in human.modifiers if modifier.type == "MASK"]
+    vertices_before = len(human.data.vertices)
+    for modifier_name in mask_names:
+        bpy.ops.object.modifier_apply(modifier=modifier_name)
+    vertices_after = len(human.data.vertices)
+    bpy.context.view_layer.update()
+
+    return {
+        "mask_modifiers_applied": mask_names,
+        "vertices_before": vertices_before,
+        "vertices_after": vertices_after,
+    }
+
+
 def main():
     manifest_path = Path(os.environ.get("SF_MANIFEST", "fixtures/generic-character-v1.json")).resolve()
     profile_path = Path(os.environ.get("SF_FACE_PROFILE", "fixtures/generic-face-quality-v1.json")).resolve()
@@ -89,13 +127,21 @@ def main():
     for name in base.CONTROL_NAMES:
         macro[name] = manifest["phenotype"][name]
 
-    human = HumanService.create_human(scale=0.1, feet_on_ground=True, macro_detail_dict=macro)
+    human = HumanService.create_human(
+        scale=0.1,
+        feet_on_ground=True,
+        mask_helpers=True,
+        detailed_helpers=True,
+        extra_vertex_groups=True,
+        macro_detail_dict=macro,
+    )
     human.name = f"{manifest['character_id']}_{profile['profile_id']}"
     applied_targets = apply_face_profile(human, profile, TargetService)
 
-    # Bake proven face targets into final geometry so the phone GLB does not carry
-    # a large morph-target stack just to preserve the authored neutral face.
+    # Bake authored face targets first, then physically apply MPFB helper masks.
+    # This keeps the intended body/face but removes helper geometry from render/export.
     TargetService.bake_targets(human)
+    helper_cleanup = apply_helper_masks(human)
     base.add_neutral_material(human)
 
     rig = HumanService.add_builtin_rig(human, "game_engine")
@@ -157,6 +203,7 @@ def main():
     bpy.ops.export_scene.gltf(filepath=str(glb_path), export_format="GLB", use_selection=True)
 
     front_location = Vector((center.x, center.y - distance, center.z + height * 0.02))
+    camera.data.lens = 58
     base.render_view(scene, camera, center, front_location, front_path)
 
     angle = math.radians(35)
@@ -170,10 +217,10 @@ def main():
     profile_location = Vector((center.x + distance, center.y, center.z + height * 0.02))
     base.render_view(scene, camera, center, profile_location, profile_render_path)
 
-    # Tighter portrait evidence than P3Q.1 so face-shape changes can be judged.
-    face_target = Vector((center.x, center.y, bbox_min.z + height * 0.885))
-    camera.data.lens = 90
-    face_distance = max(height * 0.30, width * 1.20)
+    # Portrait evidence: deliberately head/shoulders dominant for face-form comparison.
+    face_target = Vector((center.x, center.y, bbox_min.z + height * 0.895))
+    camera.data.lens = 105
+    face_distance = max(height * 0.25, width * 1.05)
     face_location = Vector((face_target.x, face_target.y - face_distance, face_target.z + height * 0.005))
     base.render_view(scene, camera, face_target, face_location, face_close_path)
 
@@ -186,6 +233,7 @@ def main():
         "runtime": {"blender": bpy.app.version_string, "mpfb": actual_mpfb},
         "locked_body_controls": dict(manifest["phenotype"]),
         "applied_face_targets": applied_targets,
+        "helper_cleanup": helper_cleanup,
         "structural": structural,
         "visual_evidence": ["front.png", "three-quarter.png", "profile.png", "face-close.png"],
         "outputs": [
@@ -203,6 +251,7 @@ def main():
     print("MPFB:", actual_mpfb)
     print("Face profile:", profile["profile_id"])
     print("Applied face targets:", len(applied_targets))
+    print("Helper cleanup:", helper_cleanup)
     print("Structural:", structural)
     print("Output:", output_dir)
 
