@@ -1,0 +1,77 @@
+name: Deploy Face Quality Viewer Demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-face-quality-demo.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cloudflare-pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-face-quality-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download proven P3Q.3 face artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p viewer/demo/face-quality
+          gh run download 32934697014 \
+            --repo "${{ github.repository }}" \
+            --name spatial-forge-character-face-quality \
+            --dir viewer/demo/face-quality
+          mv viewer/demo/face-quality/generic-character-face-quality-v1.glb \
+            viewer/demo/face-quality/model.glb
+
+      - name: Verify staged face-quality assets
+        run: |
+          set -euo pipefail
+          for file in model.glb front.png three-quarter.png profile.png face-close.png build-result.json; do
+            test -s "viewer/demo/face-quality/$file"
+          done
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('viewer/demo/face-quality')
+          result = json.loads((root / 'build-result.json').read_text())
+          assert result['character_id'] == 'generic-character'
+          assert result['runtime']['mpfb'] == '2.0.17'
+          assert len(result['applied_face_targets']) == 11
+          assert result['structural'] == {
+              'mesh_count': 1,
+              'skin_count': 1,
+              'joint_count': 53,
+          }
+          assert (root / 'model.glb').stat().st_size > 1_000_000
+          print('P3Q.3 face-quality demo assets verified')
+          PY
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy viewer and face-quality demo to Cloudflare Pages
+        run: npx wrangler@latest pages deploy viewer --project-name=ianeo-spatial-forge --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Report viewer URL
+        run: |
+          echo 'Face-quality viewer:'
+          echo 'https://forge.drthorne.uk/?model=/demo/face-quality/model.glb&meta=/demo/face-quality/build-result.json&front=/demo/face-quality/front.png&threeQuarter=/demo/face-quality/three-quarter.png&title=Generic%20Face%20Quality%20P3Q.3'
