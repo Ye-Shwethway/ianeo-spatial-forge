@@ -1,0 +1,114 @@
+name: Install Face Quality Private Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/install-face-quality-private.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: spatial-forge-private-face-install
+  cancel-in-progress: false
+
+jobs:
+  install-private-face:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VPS_HOST: ${{ secrets.SPATIALFORGE_VPS_HOST }}
+      VPS_PORT: ${{ secrets.SPATIALFORGE_VPS_PORT }}
+      VPS_USER: ${{ secrets.SPATIALFORGE_VPS_USER }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download proven face-quality artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/face"
+          gh run download 32934697014 \
+            --repo "${{ github.repository }}" \
+            --name spatial-forge-character-face-quality \
+            --dir "$RUNNER_TEMP/face"
+
+      - name: Verify exact private payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/face"
+          test -s "$ROOT/generic-character-face-quality-v1.glb"
+          test -s "$ROOT/build-result.json"
+          test -s "$ROOT/front.png"
+          test -s "$ROOT/three-quarter.png"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'face'
+          result = json.loads((root / 'build-result.json').read_text())
+          assert result['character_id'] == 'generic-character'
+          assert result['runtime']['mpfb'] == '2.0.17'
+          assert len(result['applied_face_targets']) == 11
+          assert result['structural']['skin_count'] == 1
+          assert result['structural']['joint_count'] == 53
+          print('Face-quality private payload verified')
+          PY
+
+      - name: Configure pinned SSH identity
+        shell: bash
+        env:
+          VPS_SSH_KEY_B64: ${{ secrets.SPATIALFORGE_VPS_SSH_KEY_B64 }}
+          VPS_KNOWN_HOSTS: ${{ secrets.SPATIALFORGE_VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_PORT"
+          test -n "$VPS_USER"
+          test -n "$VPS_SSH_KEY_B64"
+          test -n "$VPS_KNOWN_HOSTS"
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s' "$VPS_SSH_KEY_B64" | tr -d '[:space:]' | base64 --decode > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" >/dev/null
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+      - name: Stage face-quality assets on VPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/face"
+          STAGE="$RUNNER_TEMP/stage"
+          mkdir -p "$STAGE"
+          cp "$ROOT/generic-character-face-quality-v1.glb" "$STAGE/model.glb"
+          cp "$ROOT/build-result.json" "$STAGE/build-result.json"
+          cp "$ROOT/front.png" "$STAGE/front.png"
+          cp "$ROOT/three-quarter.png" "$STAGE/three-quarter.png"
+          tar -C "$STAGE" -cf - model.glb build-result.json front.png three-quarter.png | \
+            ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+              "$VPS_USER@$VPS_HOST" \
+              'set -e; rm -rf /srv/ianeo-spatial-forge/app/build-staging/current; mkdir -p /srv/ianeo-spatial-forge/app/build-staging/current; tar -xf - -C /srv/ianeo-spatial-forge/app/build-staging/current'
+
+      - name: Promote through existing private installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'sudo /usr/local/sbin/ianeo-spatial-forge-install-proof-build'
+
+      - name: Verify installed build through localhost API
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'set -e; test -s /srv/ianeo-spatial-forge/private/builds/p3-private-proof/model.glb; grep -q '"'"'face-quality-v1'"'"' /srv/ianeo-spatial-forge/private/builds/p3-private-proof/build-result.json; curl -fsS http://127.0.0.1:18792/health | grep -q '"'"'ianeo-spatial-forge'"'"''
