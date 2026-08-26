@@ -67,18 +67,29 @@ Work one slice at a time. A slice is complete only after runtime evidence is ins
 - hands/feet and profile torso/hip forms remain basic
 - current face view is usable for comparison but should become a tighter portrait later.
 
-**Evidence-driven order:** P3Q.3 face control is the next active slice. P3Q.2 remains required but moves after the face-control proof because face definition offers the largest visible gain.
-
 - [ ] P3Q.2 Improve mesh/surface presentation.
   - shading, normals, seams
   - smallest useful subdivision/surface treatment
   - GLB + fresh-import comparison.
 
-- [ ] P3Q.3 Expand face-shape control. **ACTIVE**
-  - identify real MPFB head/face controls before schema expansion
-  - add a small useful supported set for head, jaw/chin, nose, eyes, brows, mouth/lips
-  - add tighter face evidence
-  - prove a face-only revision without body drift.
+- [ ] P3Q.3 Expand face-shape control.
+  - [x] P3Q.3A **Technical face-control proof.**
+    - MPFB `2.0.17` runtime target inventory was probed instead of inventing schema fields.
+    - Probe found 530 bundled targets, including 270 face/head-related targets.
+    - A small 11-target generic face profile was applied, baked, rigged, exported to GLB, and fresh-imported successfully.
+    - Final face workflow run `32934697014` PASS; artifact `9594484821`.
+    - Private VPS install path was proven with build ID `generic-face-quality-v1`; install run `32938078210` PASS.
+    - Creator opened the private build from the authenticated Asset Library on Android and confirmed it renders in the web viewer.
+    - **Result:** transport/control is proven, but visible quality gain is too subtle. This is a technical proof, not a visual-quality pass.
+  - [ ] P3Q.3B **Visible face sculpt pass — ACTIVE.**
+    - Temporarily remove/disable the current hair asset in face-review builds because it obscures the face.
+    - Keep body macro phenotype locked.
+    - Use stronger but still human-looking supported MPFB face targets for head/jaw/chin/cheek/nose/eye-region/lips.
+    - Tighten portrait framing so head/shoulders dominate the comparison.
+    - Produce baseline vs revised fixed evidence and require an obvious visual difference before calling the slice visually successful.
+    - Do not add skin/material complexity yet; first prove readable facial form.
+
+**P3Q.3 visual finding:** the first 11-target build is structurally healthy and web-deliverable, but the Creator correctly judged that it looks almost the same as the baseline. The current blocky hair also hides much of the face. Continue with P3Q.3B rather than claiming face quality is complete.
 
 - [ ] P3Q.4 Production-quality PBR skin/eyes/mouth appearance.
 - [ ] P3Q.5 Hair/brows/facial-hair asset path.
@@ -87,9 +98,13 @@ Work one slice at a time. A slice is complete only after runtime evidence is ins
 - [ ] P3Q.8 Presentation-grade viewer/render defaults.
 - [ ] P3Q.9 Final generic quality proof against P3Q.1 baseline.
 
+### P3Q evidence-driven order
+
+Current order is **P3Q.3B visible face form → P3Q.4 skin/eyes/mouth → P3Q.5 hair/brows → P3Q.2 mesh/surface polish → clothing/deformation/presentation** unless new visual evidence justifies a change. P3Q.2 remains required; it is simply not the highest-value next move.
+
 ### P3Q quality rule
 
-Structural validity and visual quality are separate gates. Green Actions runs and mesh/joint counts do not prove that a character looks good. Each visual slice requires fixed comparable evidence and actual inspection.
+Structural validity and visual quality are separate gates. Green Actions runs, valid targets, successful GLB export, mesh/joint counts, and successful web delivery do not prove that a character looks good. Each visual slice requires fixed comparable evidence and actual Creator inspection.
 
 ## P4 — Telegram Delivery + Mini App
 
@@ -135,4 +150,4 @@ Structural validity and visual quality are separate gates. Green Actions runs an
 - Keep production simple; avoid broad test matrices and speculative guards.
 - Read `skills/spatial-forge-3d/SKILL.md` for 3D work and `skills/spatial-forge-ui/SKILL.md` for UI work.
 - Do not claim success until required runtime and visual evidence is inspected.
-- Update docs after every completed slice.
+- Update docs after every completed slice or material scope/status change.
