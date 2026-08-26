@@ -92,20 +92,28 @@ Success:
 
 Goal: turn the structurally valid generic MPFB human into a visually convincing, detailed, attractive character while preserving reproducibility, truthful controls, rig/export safety, and phone-friendly GLB delivery.
 
-This is the next active phase before Telegram or MCP.
+This is the active phase before Telegram or MCP.
 
-Quality ladder:
-1. establish a clean baseline and fixed visual evidence views
-2. improve mesh presentation, smoothing/normals and mobile-appropriate surface quality
-3. expand only genuinely supported face controls and prove scoped face revision
-4. add GLB-safe PBR skin/eye/mouth materials
-5. add a disciplined hair/brow/facial-hair asset path
-6. add a clean replaceable clothing asset path with skinning/clipping checks
-7. improve demonstrated rig deformation problems only
-8. improve neutral viewer/render lighting, framing and inspection modes
-9. produce one deterministic complete generic quality character and compare it against the baseline on Android.
+### Current P3Q state
 
-Success is visual as well as structural. A green workflow, mesh count, or valid rig does not prove beauty or believable appearance; fixed comparable previews and actual inspection are required.
+- **P3Q.1 baseline: PASS.** Fixed front, three-quarter, profile and face/upper-body evidence established; the face was identified as the largest visible bottleneck.
+- **P3Q.3A face-control technical proof: PASS.** Actual MPFB `2.0.17` target data was probed; 530 bundled targets were discovered, including 270 face/head-related targets. A small 11-target face profile survived target application, bake, rig, GLB export, fresh import, VPS installation, and authenticated Android web viewing.
+- **Visual verdict on P3Q.3A: NOT a quality pass.** The Creator inspected the private build and judged the visible change too subtle. The current blocky hair also obscures much of the face. Structural/transport success must not be confused with beauty or useful visual improvement.
+- **P3Q.3B Visible Face Sculpt Pass: ACTIVE.** Temporarily remove the current hair in face-review builds, lock body macros, use stronger but still human-looking supported face targets, tighten portrait framing, and require an obvious baseline-vs-revision difference before moving on.
+
+Current evidence-driven quality order:
+1. visible face form / sculpt readability (`P3Q.3B`)
+2. GLB-safe skin, eyes, mouth/lips (`P3Q.4`)
+3. hair/brows/facial-hair asset quality (`P3Q.5`)
+4. mesh/surface polish (`P3Q.2` remains required)
+5. clothing
+6. deformation
+7. presentation defaults
+8. final generic quality proof against P3Q.1.
+
+The order may change only when actual fixed-view evidence shows a higher-value bottleneck.
+
+Success is visual as well as structural. A green workflow, valid target count, successful export/import, rig count, or working web viewer does not prove beauty or believable appearance; fixed comparable previews and Creator inspection are required.
 
 Early P3Q is intentionally not:
 - high-end sculpting from scratch
@@ -183,4 +191,4 @@ For Blender, MPFB, character, scene, rigging, GLB, rendering, or 3D validation w
 
 ## Documentation Rule
 
-After every completed slice, update `IMPLEMENTATION_PLAN.md`, this roadmap when scope/status changes, and `NEW_CHAT_BOOTSTRAP.md` with the exact current handoff state.
+After every completed slice or material scope/status change, update `IMPLEMENTATION_PLAN.md`, this roadmap, and `NEW_CHAT_BOOTSTRAP.md` with the exact current handoff state.
