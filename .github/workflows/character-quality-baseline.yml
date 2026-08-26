@@ -1,0 +1,142 @@
+name: Character Quality Baseline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/character-quality-baseline.yml"
+      - "scripts/build_character.py"
+      - "scripts/validate_glb.py"
+      - "fixtures/generic-character-v1.json"
+
+permissions:
+  contents: read
+
+jobs:
+  quality-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BLENDER_VERSION: "4.5.12"
+      BLENDER_ARCHIVE: "blender-4.5.12-linux-x64.tar.xz"
+      BLENDER_URL: "https://download.blender.org/release/Blender4.5/blender-4.5.12-linux-x64.tar.xz"
+      SF_MANIFEST: "${{ github.workspace }}/fixtures/generic-character-v1.json"
+      SF_OUTPUT_DIR: "${{ github.workspace }}/output/quality-baseline"
+      SF_EXPECTED_MPFB_VERSION: "2.0.17"
+      SF_QUALITY_BASELINE: "1"
+      SF_GLB_PATH: "${{ github.workspace }}/output/quality-baseline/generic-character-v1.glb"
+      SF_FRESH_IMPORT_RESULT: "${{ github.workspace }}/output/quality-baseline/fresh-import.json"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check baseline inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool fixtures/generic-character-v1.json >/dev/null
+          python -m py_compile scripts/build_character.py scripts/validate_glb.py
+
+      - name: Install headless render runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1
+
+      - name: Download Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 \
+            "$BLENDER_URL" \
+            --output "$RUNNER_TEMP/$BLENDER_ARCHIVE"
+          tar -xJf "$RUNNER_TEMP/$BLENDER_ARCHIVE" -C "$RUNNER_TEMP/blender" --strip-components=1
+          "$RUNNER_TEMP/blender/blender" --version
+
+      - name: Install MPFB extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" --online-mode --command extension install -s -e mpfb
+          "$RUNNER_TEMP/blender/blender" --command extension list | grep -i mpfb
+
+      - name: Build fixed quality baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SF_OUTPUT_DIR"
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --python scripts/build_character.py
+
+      - name: Fresh-import exported GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender/blender" \
+            --background \
+            --python scripts/validate_glb.py
+
+      - name: Verify P3Q.1 baseline contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            generic-character-v1.blend \
+            generic-character-v1.glb \
+            front.png \
+            three-quarter.png \
+            profile.png \
+            face-close.png \
+            build-result.json \
+            fresh-import.json; do
+            test -s "$SF_OUTPUT_DIR/$file"
+          done
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("output/quality-baseline")
+          result = json.loads((root / "build-result.json").read_text())
+          fresh = json.loads((root / "fresh-import.json").read_text())
+
+          assert result["character_id"] == "generic-character"
+          assert result["version"] == 1
+          assert result["visual_evidence"] == [
+              "front.png",
+              "three-quarter.png",
+              "profile.png",
+              "face-close.png",
+          ]
+          assert result["quality_baseline"]["fixed_views"] == [
+              "front",
+              "three-quarter",
+              "profile",
+              "face-close",
+          ]
+          assert result["structural"]["skin_count"] == 1
+          assert result["structural"]["joint_count"] == 53
+          assert fresh["armatures"] == 1
+          assert fresh["bones"] == 53
+          print(json.dumps({
+              "visual_evidence": result["visual_evidence"],
+              "structural": result["structural"],
+              "fresh_import": fresh,
+          }, indent=2))
+          PY
+
+          file "$SF_OUTPUT_DIR"/*.png
+          ls -lh "$SF_OUTPUT_DIR"
+
+      - name: Upload P3Q.1 baseline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-forge-character-quality-baseline
+          path: output/quality-baseline/
+          if-no-files-found: error
+          retention-days: 7
